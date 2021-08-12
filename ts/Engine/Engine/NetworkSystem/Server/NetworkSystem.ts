@@ -27,6 +27,7 @@ export default class UNetworkSystem extends XBase {
         return RoomManager.Ins.getRoomById(id);
     }
     public getKey(conn: any) { return conn["key"]; }
+    
     /************************************************
      * 发送
      ************************************************/
