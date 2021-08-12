@@ -1,0 +1,18 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "node-cmd": "^5.0.0",
+    "nodejs-websocket": "^1.7.2",
+    "save": "^2.4.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "cp": "node ./script/copy.js",
+    "up":"node ./script/update.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
