@@ -37,10 +37,14 @@ export default class USceneComponent extends UComponent {
         if (this.owner.getSceneComponent() == null) {
             this.owner.setSceneComponent(this);
         }
-        this.register();
+
+        //客户端才需要注册SceneComponent，用于显示
+        if (this.owner.world.isClient) {
+            this.register();
+        }
     }
     public register() {
-        this.owner.world.gameInstance.getWorldView().addSceneComponent(this);
+        this.owner.world.actorSystem.registerSceneComponent(this);
     }
 
     public unUse() {
@@ -62,11 +66,10 @@ export default class USceneComponent extends UComponent {
         this._scale.y = 1;
         this._rotation = 0;
     }
+    
     public unRegister() {
-        this.owner.world.gameInstance.getWorldView().removeSceneComponent(this);
+        this.owner.world.actorSystem.unRegisterSceneComponent(this);
     }
-
-
 
     public processInput(input: UInput) {
         super.processInput(input);
@@ -93,13 +96,16 @@ export default class USceneComponent extends UComponent {
 
 
     onDestory() {
-        this.unRegister();
+        if (this.owner.world.isClient) {
+            this.unRegister();
+        }
         super.onDestory();
     }
 
+    transformDirty: boolean = true;
     onComputeTransfor() {
         this.visiblity = this._visiblity;
-        this.owner.world.gameInstance.getWorldView().onSceneCompComputeTransfor(this);
+        this.transformDirty = true;
     }
 
     //Override

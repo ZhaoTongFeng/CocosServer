@@ -16,14 +16,15 @@ export default class USpriteComponent extends USceneComponent {
     private needUpdateTexture: boolean = true;
 
     @xproperty(UColor)
-    private color: UColor = UColor.WHITE();
-
-    getColor() {
-        return this.color;
+    private _color: UColor = UColor.WHITE();
+    public get color(): UColor {
+        return this._color;
     }
-    setColor(val: UColor) {
-        this.color = val;
-        this.owner.world.gameInstance.getWorldView().onSpriteCompSetColor(this);
+    public set color(value: UColor) {
+        this._color = value;
+        if(this.owner.world.isClient){
+            this.owner.world.gameInstance.getWorldView().onSpriteCompSetColor(this);
+        }
     }
 
     unUse() {
@@ -32,17 +33,18 @@ export default class USpriteComponent extends USceneComponent {
 
     reUse() {
         super.reUse();
-        this.setColor(UColor.WHITE())
+        this._color = UColor.WHITE();
         this.needUpdateTexture = true;
         this.textureName = "";
     }
 
     register() {
-        this.owner.world.gameInstance.getWorldView().addSpriteComponent(this);
+        this.owner.world.actorSystem.registerSprite(this);
     }
     unRegister() {
-        this.owner.world.gameInstance.getWorldView().removeSpriteComponent(this);
+        this.owner.world.actorSystem.unRegisterSprite(this);
     }
+
     //1.
     public init(data: any) {
         super.init(data);
@@ -53,9 +55,14 @@ export default class USpriteComponent extends USceneComponent {
         this.needUpdateTexture = true;
     }
 
+    onComputeTransfor() {
+        super.onComputeTransfor();
+    }
+
     getTexture() {
         return this.textureName;
     }
+
     setTexture(tex: string) {
         this.textureName = tex;
         this.markTextureDirty();

@@ -45,8 +45,15 @@ var AController = /** @class */ (function (_super) {
         _super.prototype.reUse.call(this);
         this.pawn = null;
     };
+    AController.prototype.sendData = function (obj) {
+        var out = [this.id, obj];
+        this.world.gameInstance.sendGameData(out);
+    };
+    AController.prototype.receiveData = function (obj) {
+    };
     AController.prototype.init = function (world) {
         _super.prototype.init.call(this, world);
+        this.world.inputSystem.register(this);
     };
     AController.prototype.processSelfInput = function (input) {
     };
@@ -55,6 +62,7 @@ var AController = /** @class */ (function (_super) {
     AController.prototype.drawDebugActor = function (graphic) {
     };
     AController.prototype.destory = function () {
+        this.world.inputSystem.unRegister(this);
         _super.prototype.destory.call(this);
     };
     AController.prototype.process = function (pawn) {

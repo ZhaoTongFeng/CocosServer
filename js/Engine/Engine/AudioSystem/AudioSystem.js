@@ -24,23 +24,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UAudioSystem = void 0;
 var Object_1 = __importDefault(require("../../Object"));
 var XBase_1 = require("../ReflectSystem/XBase");
-/**
- * 音频管理器
- */
 var UAudioSystem = /** @class */ (function (_super) {
     __extends(UAudioSystem, _super);
     function UAudioSystem() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.instance = null;
+        return _this;
     }
     UAudioSystem_1 = UAudioSystem;
-    UAudioSystem.prototype.init = function (data) {
-        if (data === void 0) { data = null; }
-        _super.prototype.init.call(this, data);
-    };
-    UAudioSystem.prototype.destory = function () {
-        _super.prototype.destory.call(this);
+    UAudioSystem.prototype.init = function (instance) {
+        _super.prototype.init.call(this, instance);
+        this.instance = instance;
     };
     var UAudioSystem_1;
     UAudioSystem = UAudioSystem_1 = __decorate([
@@ -48,4 +45,4 @@ var UAudioSystem = /** @class */ (function (_super) {
     ], UAudioSystem);
     return UAudioSystem;
 }(Object_1.default));
-exports.default = UAudioSystem;
+exports.UAudioSystem = UAudioSystem;

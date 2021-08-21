@@ -28,16 +28,48 @@ var Object_1 = __importDefault(require("../../Object"));
 var XBase_1 = require("../ReflectSystem/XBase");
 /**
  * 对象管理器
+ * 对象查询
+ * 对象池
  */
 var UActorSystem = /** @class */ (function (_super) {
     __extends(UActorSystem, _super);
     function UActorSystem() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.sceneComponents = [];
+        _this.spriteComponents = [];
+        _this.world = null;
+        return _this;
     }
     UActorSystem_1 = UActorSystem;
-    UActorSystem.prototype.init = function (data) {
-        if (data === void 0) { data = null; }
-        _super.prototype.init.call(this, data);
+    UActorSystem.prototype.registerSceneComponent = function (scene) {
+        this.sceneComponents.push(scene);
+        this.world.gameInstance.getWorldView().addSceneComponent(scene);
+    };
+    UActorSystem.prototype.unRegisterSceneComponent = function (scene) {
+        var index = this.sceneComponents.findIndex(function (one) {
+            return one == scene;
+        });
+        if (index > -1) {
+            this.sceneComponents.splice(index, 1);
+        }
+        this.world.gameInstance.getWorldView().removeSceneComponent(scene);
+    };
+    UActorSystem.prototype.registerSprite = function (scene) {
+        this.spriteComponents.push(scene);
+        this.world.gameInstance.getWorldView().addSpriteComponent(scene);
+    };
+    UActorSystem.prototype.unRegisterSprite = function (scene) {
+        var index = this.spriteComponents.findIndex(function (one) {
+            return one == scene;
+        });
+        if (index > -1) {
+            this.spriteComponents.splice(index, 1);
+            this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
+        }
+    };
+    UActorSystem.prototype.init = function (world) {
+        _super.prototype.init.call(this, world);
+        this.world = world;
     };
     UActorSystem.prototype.destory = function () {
         _super.prototype.destory.call(this);

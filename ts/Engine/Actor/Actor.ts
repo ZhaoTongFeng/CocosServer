@@ -33,7 +33,7 @@ export default class AActor extends UObject {
 
     @xproperty(XBase)
     private components: UComponent[] = [];
-    
+
     private rootComponent: UComponent = null;
     private sceneComponent: USceneComponent = null;
     protected collisionComponent: UCollisionComponent = null;
@@ -47,7 +47,7 @@ export default class AActor extends UObject {
     //Override
     public reUse() {
         super.reUse();
-        this.world = null;
+        // this.world = null;
         this.components = [];
         this.rootComponent = null;
         this.sceneComponent = null;
@@ -57,6 +57,7 @@ export default class AActor extends UObject {
     }
 
     //Override
+    //被创建时 立即调用
     init(world: UWorld) {
         super.init(world);
         this.world = world;
@@ -64,6 +65,7 @@ export default class AActor extends UObject {
     }
 
     //Override
+    //真正被加入场景中调用
     onInit() {
         this.state = UpdateState.Active;
     }
@@ -80,7 +82,9 @@ export default class AActor extends UObject {
     protected processSelfInput(input: UInput) { }
     protected processChildrenInput(input: UInput) {
         this.components.forEach(comp => {
-            comp.processInput(input);
+            if (comp.state == UpdateState.Active) {
+                comp.processInput(input);
+            }
         });
     }
 
@@ -90,7 +94,9 @@ export default class AActor extends UObject {
         if (this.reComputeTransform) {
             this.reComputeTransform = false;
             this.components.forEach(comp => {
-                comp.onComputeTransfor();
+                if (comp.state == UpdateState.Active) {
+                    comp.onComputeTransfor();
+                }
             });
         }
     }
@@ -109,7 +115,9 @@ export default class AActor extends UObject {
     protected updateActor(dt) { }
     protected updateComponents(dt) {
         this.components.forEach(comp => {
-            comp.update(dt);
+            if (comp.state == UpdateState.Active) {
+                comp.update(dt);
+            }
         });
     }
 
@@ -122,28 +130,37 @@ export default class AActor extends UObject {
     protected drawDebugActor(graphic: UGraphic) { }
     protected drawDebugComponents(graphic: UGraphic) {
         this.components.forEach(comp => {
-            comp.drawDebug(graphic);
+            if (comp.state == UpdateState.Active) {
+                comp.drawDebug(graphic);
+            }
+
         });
     }
 
     //销毁
     public destory() {
         this.state = UpdateState.Dead;
+        this.components.forEach(comp => {
+            comp.state = UpdateState.Dead;
+        });
     }
 
     //Override
     public onDestory() {
         this.components.forEach(comp => {
             comp.onDestory();
-
-            //添加到对象池
-            if (comp != null) {
-                comp.unUse();
-                let clsName = comp.constructor.name;
-                let arr = this.world.componentPoos.get(clsName);
-                arr.push(comp);
-            }
+            this.checkComponentPool(comp);
         });
+    }
+
+    private checkComponentPool(comp: UComponent) {
+        //添加到对象池
+        if (comp != null && this.world.usePool) {
+            comp.unUse();
+            let clsName = comp.constructor.name;
+            let arr = this.world.componentPoos.get(clsName);
+            arr.push(comp);
+        }
     }
 
     /**增删Component */
@@ -161,6 +178,7 @@ export default class AActor extends UObject {
         let index = this.components.indexOf(comp);
         if (index > -1) {
             this.components[index].onDestory();
+            this.checkComponentPool(comp);
             this.components.splice(index, 1);
         }
         // console.log("remove comp num:",this.components.length);

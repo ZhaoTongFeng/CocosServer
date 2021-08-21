@@ -8,8 +8,9 @@ import USpriteComponent from "./SpriteComponent";
  * 精灵图片组件
  * 挂载到Actor上，以显示图片
  */
- @xclass(USpriteAnimationComponent)
+@xclass(USpriteAnimationComponent)
 export default class USpriteAnimationComponent extends USpriteComponent {
+
     static Ani_Explostion = "explosion/explosion";
     static Ani_MuzzleFlash = "weapon/muzzleflash/muzzleflash";
     static Animations: Map<string, string[]> = new Map();
@@ -28,9 +29,12 @@ export default class USpriteAnimationComponent extends USpriteComponent {
         textures = USpriteAnimationComponent.getTextureNames(USpriteAnimationComponent.Ani_MuzzleFlash, 3, 1);
         USpriteAnimationComponent.Animations.set(USpriteAnimationComponent.Ani_MuzzleFlash, textures);
     }
+
+
     
-    private textureNames: string[] = [];
-    
+    //动画ID
+    private texIndex:string = null;
+
     private isLoop: boolean = true;
     private isFinish: boolean = true;
     private fps: number = 16;
@@ -44,36 +48,19 @@ export default class USpriteAnimationComponent extends USpriteComponent {
 
     reUse() {
         super.reUse();
-        this.textureNames = [];
+        this.texIndex = null
         this.isLoop = true;
-        this.isFinish=true;
-        this.fps=16;
-        this.frameTime = 1/16;
+        this.isFinish = true;
+        this.fps = 16;
+        this.frameTime = 1 / 16;
         this.frameIndex = 0;
         this.timer = 0;
     }
 
+
     setAnimation(name: string) {
-        let textures = USpriteAnimationComponent.Animations.get(name);
-        this.textureNames = textures || [];
+        this.texIndex = name;
     }
-
-
-    //DISABLE，不要一个一个的设置名称，动画名称都是一样的，全部放到一起。
-    private setTextures(textures: string[]) {
-        if (textures.length != 0) {
-            if (this.textureNames == null) {
-                this.textureNames = [];
-            }
-            this.textureNames = textures;
-            this.setTexture(textures[0])
-        }
-    }
-
-
-
-
-
 
     setFPS(newFps: number) {
         this.fps = newFps;
@@ -87,14 +74,18 @@ export default class USpriteAnimationComponent extends USpriteComponent {
 
     public update(dt) {
         super.update(dt);
-        if (this.textureNames.length != 0) {
+        if(!this.owner.world.isClient){
+            return;
+        }
+        if (this.texIndex!=null) {
+            let textures = USpriteAnimationComponent.Animations.get(this.texIndex);
             if (this.isFinish == false) {
 
                 this.timer += dt;
                 if (this.timer > this.frameTime) {
                     this.timer = 0;
-                    let newFrameIndex = (this.frameIndex + 1) % this.textureNames.length;
-                    this.setTexture(this.textureNames[newFrameIndex]);
+                    let newFrameIndex = (this.frameIndex + 1) % textures.length;
+                    this.setTexture(textures[newFrameIndex]);
 
                     if (newFrameIndex < this.frameIndex && this.isLoop == false) {
                         this.isFinish = true;
@@ -103,8 +94,7 @@ export default class USpriteAnimationComponent extends USpriteComponent {
                 }
             }
         }
-
-
     }
+
 
 }

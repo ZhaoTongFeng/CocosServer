@@ -119,14 +119,16 @@ export default class UCollisionSystem extends UObject {
         this.sort();
         this.testCount = 0;
         for (let i = 0; i < this.collisions.length; i++) {
-            if (this.collisions[i].owner.state == UpdateState.Dead) {
+            if (this.collisions[i].state == UpdateState.Dead ||
+                this.collisions[i].owner.state == UpdateState.Dead) {
                 continue;
             }
             //TODO 需要将Index保存到每个Box里面，然后直接用下面的方法去比较即可，如果发生变化，更新Box的Index
             let a: UCollisionComponent = this.collisions[i];
             const max = a.getMaxX();
             for (let j = i + 1; j < this.collisions.length; j++) {
-                if (this.collisions[j].owner.state == UpdateState.Active) {
+                if (this.collisions[j].state == UpdateState.Active &&
+                    this.collisions[j].owner.state == UpdateState.Active) {
                     const b: UCollisionComponent = this.collisions[j];
                     if (b.getMinX() > max) {
                         break; 1
@@ -159,10 +161,10 @@ export default class UCollisionSystem extends UObject {
         }
         this.testTotalCount += this.testCount;
 
-        this.frameCount++;
-        if (this.frameCount % 60 == 0) {
-            // this.print();
-        }
+        // this.frameCount++;
+        // if (this.frameCount % 60 == 0) {
+        //     this.print();
+        // }
     }
 
     protected print() {
@@ -185,7 +187,7 @@ export default class UCollisionSystem extends UObject {
             "Actors", this.world.actors.length,
         )
         console.warn(
-            "ac pool",this.world.actorPool,
+            "ac pool", this.world.actorPool,
             "cp pool", this.world.componentPoos,
         )
     }

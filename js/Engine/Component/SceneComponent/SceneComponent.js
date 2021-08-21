@@ -42,6 +42,7 @@ var USceneComponent = /** @class */ (function (_super) {
         _this._size = UMath_1.uu.v2(64, 64);
         _this._scale = UMath_1.uu.v2(1, 1);
         _this._rotation = 0;
+        _this.transformDirty = true;
         return _this;
     }
     USceneComponent_1 = USceneComponent;
@@ -50,10 +51,13 @@ var USceneComponent = /** @class */ (function (_super) {
         if (this.owner.getSceneComponent() == null) {
             this.owner.setSceneComponent(this);
         }
-        this.register();
+        //客户端才需要注册SceneComponent，用于显示
+        if (this.owner.world.isClient) {
+            this.register();
+        }
     };
     USceneComponent.prototype.register = function () {
-        this.owner.world.gameInstance.getWorldView().addSceneComponent(this);
+        this.owner.world.actorSystem.registerSceneComponent(this);
     };
     USceneComponent.prototype.unUse = function () {
         this.visiblity = Enums_1.Visiblity.Hide;
@@ -73,7 +77,7 @@ var USceneComponent = /** @class */ (function (_super) {
         this._rotation = 0;
     };
     USceneComponent.prototype.unRegister = function () {
-        this.owner.world.gameInstance.getWorldView().removeSceneComponent(this);
+        this.owner.world.actorSystem.unRegisterSceneComponent(this);
     };
     USceneComponent.prototype.processInput = function (input) {
         _super.prototype.processInput.call(this, input);
@@ -90,12 +94,14 @@ var USceneComponent = /** @class */ (function (_super) {
     USceneComponent.prototype.draw = function (graphic) {
     };
     USceneComponent.prototype.onDestory = function () {
-        this.unRegister();
+        if (this.owner.world.isClient) {
+            this.unRegister();
+        }
         _super.prototype.onDestory.call(this);
     };
     USceneComponent.prototype.onComputeTransfor = function () {
         this.visiblity = this._visiblity;
-        this.owner.world.gameInstance.getWorldView().onSceneCompComputeTransfor(this);
+        this.transformDirty = true;
     };
     //Override
     USceneComponent.prototype.isMainScene = function () {

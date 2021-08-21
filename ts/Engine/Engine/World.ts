@@ -11,8 +11,6 @@ import { GameState, UpdateState } from "./Enums";
 import UGameInstance from "./GameInstance";
 import { UInputSystem } from "./InputSystem/InputSystem";
 import { xclass } from "./ReflectSystem/XBase";
-import UGraphic from "./UGraphic";
-import { UColor } from "./UMath";
 
 /**
  * 一个关卡 逻辑关卡
@@ -49,7 +47,9 @@ export default class UWorld extends UObject {
     gameMode: AGameModeBase = null;
     player: APawn = null;
 
-    usePool: boolean = false;
+    usePool: boolean = true;
+
+    isClient:boolean = false;
     // 被创建时 初始化关卡
     public init(data: any = null) {
         super.init(data);
@@ -67,6 +67,7 @@ export default class UWorld extends UObject {
         this.actorSystem.init(this);
 
         this.gameState = GameState.Playing
+        this.isClient = this.gameInstance.getIsClient();
     }
 
     //释放关卡
@@ -117,16 +118,21 @@ export default class UWorld extends UObject {
 
 
                     //添加到对象池
-                    this.actors[i].unUse();
-                    if (this.actors[i] != null) {
-                        let clsName = this.actors[i].constructor.name;
-                        let arr = this.actorPool.get(clsName);
-                        arr.push(this.actors[i]);
+                    if (this.usePool) {
+                        this.actors[i].unUse();
+                        if (this.actors[i] != null) {
+                            let clsName = this.actors[i].constructor.name;
+                            let arr = this.actorPool.get(clsName);
+                            arr.push(this.actors[i]);
+                        }
+
                     }
 
                     this.actors.splice(i, 1);
                 }
             }
+
+
         }
     }
 
@@ -163,7 +169,7 @@ export default class UWorld extends UObject {
 
     spawnComponent<A extends UComponent>(actor: AActor, c: new () => A): A {
         let comp = null;
-        if(this.usePool){
+        if (this.usePool) {
             let clsName = c.name;
             if (this.componentPoos.has(clsName) == false) {
                 this.componentPoos.set(clsName, []);
@@ -176,7 +182,7 @@ export default class UWorld extends UObject {
                 comp = arr.pop();
                 comp = comp as A;
                 comp.reUse();
-    
+
             }
         }
 
@@ -187,7 +193,11 @@ export default class UWorld extends UObject {
         return comp;
     }
 
-    /**增删Actor */
+    /**
+     * 增加Actor
+     * 需要考虑在更新过程中添加的情况，而删除Actor，不需要考虑，因为全部都是这一帧结束后删除
+     * @param actor 
+     */
     public addActor(actor: AActor) {
         if (this.isUpdating) {
             this.actors_peending.push(actor);
@@ -200,17 +210,5 @@ export default class UWorld extends UObject {
             // console.log("最大Actor数量", this.maxActorCount);
         }
         // console.log("add actor num:",this.actors.length);
-    }
-
-    public removeActor(actor: AActor) {
-        let index = this.actors.indexOf(actor);
-        if (index > -1) {
-            this.actors.splice(index, 1);
-        }
-        index = this.actors_peending.indexOf(actor);
-        if (index > -1) {
-            this.actors_peending.splice(index, 1);
-        }
-        console.log("after remove actor num:", this.actors.length);
     }
 }

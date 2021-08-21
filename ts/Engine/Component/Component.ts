@@ -56,11 +56,12 @@ export default class UComponent extends UObject {
     public destory() {
         this.owner.removeComponent(this);
     }
+
     onDestory() {
         if (this.owner.getRootComp() == this) {
             this.owner.setRootComp(null);
         }
-        this.owner = null;
+        // this.owner = null;
     }
 
 

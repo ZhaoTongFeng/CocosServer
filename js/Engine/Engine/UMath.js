@@ -287,6 +287,9 @@ var UVec2 = /** @class */ (function (_super) {
     };
     UVec2.prototype.fromJSON = function (obj, serializeData) {
         if (serializeData === void 0) { serializeData = null; }
+        if (obj instanceof Array) {
+            obj = obj[0];
+        }
         var arr = obj["arr"];
         this.set(arr[0], arr[1]);
     };

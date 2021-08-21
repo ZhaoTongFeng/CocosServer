@@ -24,11 +24,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var Enums_1 = require("./Enums");
-var GameInstance_1 = __importDefault(require("./GameInstance"));
 var XBase_1 = require("./ReflectSystem/XBase");
 var UGraphic_1 = __importDefault(require("./UGraphic"));
-var UMath_1 = require("./UMath");
 /**
  * Logic-View
  * Client Only
@@ -41,44 +38,26 @@ var UWorldView = /** @class */ (function (_super) {
     __extends(UWorldView, _super);
     function UWorldView() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        //调试工具
         _this.graphic = new UGraphic_1.default();
-        _this.fps = 60;
-        _this.frameTime = 1 / 60;
         _this.gameInstance = null;
-        _this.sceneComponents = [];
-        _this.cameraMap = new Map();
         return _this;
     }
     UWorldView_1 = UWorldView;
     //退出和进入此场景操作
+    //SEVER 服务器直接从这里开始 
     UWorldView.prototype.onEnter = function (world, data) {
         if (data === void 0) { data = null; }
-        //SEVER 服务器直接从这里开始
-        this.gameInstance = new GameInstance_1.default();
         this.gameInstance.openWorld(world, data, this);
     };
     UWorldView.prototype.onExit = function () {
         this.gameInstance.closeWorld();
     };
-    //VIew更新入口
+    //Client的逻辑更新入口
     UWorldView.prototype.update = function (dt) {
-        dt = UMath_1.UMath.clamp(dt, 0, this.frameTime);
-        //1.处理输入 输入已经发送到GameInstance的Input中，在World中会被转发到各个Ac
-        //2.处理更新
-        this.gameInstance.update(dt);
-        //3.处理输出 只需要更新Scene中draw方法即可
-        this.drawAllSprite();
-        this.graphic.begDrawDebug();
-        this.gameInstance.drawDebug(this.graphic);
-    };
-    UWorldView.prototype.drawAllSprite = function () {
-        var _this = this;
-        //3.处理输出 只需要更新Scene中draw方法即可
-        this.sceneComponents.forEach(function (comp) {
-            if (comp.visiblity == Enums_1.Visiblity.Visible) {
-                comp.draw(_this.graphic);
-            }
-        });
+        if (this.gameInstance) {
+            this.gameInstance.update(dt);
+        }
     };
     UWorldView.prototype.addSceneComponent = function (comp) { };
     UWorldView.prototype.removeSceneComponent = function (comp) { };

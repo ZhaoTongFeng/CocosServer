@@ -58,7 +58,7 @@ export function xenum(name, e, params = null): any {
     let i = 0;
     enu.forEach((v, k) => {
         if (i >= len) { return; }
-        console.log(k, titles.get(k))
+        // console.log(k, titles.get(k))
         i++;
         XManager.Ins.addEnum(name, k, titles.get(k));
     });

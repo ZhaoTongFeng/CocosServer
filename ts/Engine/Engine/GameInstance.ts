@@ -5,7 +5,7 @@ import { UAudioSystem } from "./AudioSystem/AudioSystem";
 
 import { UInput } from "./InputSystem/Input";
 import { LevelSystem } from "./LevelSystem/LevelSystem";
-import UNetworkSystem from "./NetworkSystem/Client/NetworkSystem";
+import UNetworkSystem from "./NetworkSystem/Client/ClientNetworkSystem";
 import { xclass } from "./ReflectSystem/XBase";
 import UGraphic from "./UGraphic";
 import UWorldView from "./UWorldView";
@@ -39,7 +39,7 @@ export default class UGameInstance extends UObject {
      * 服务端客户端标识
      * 在编写游戏逻辑时，可以选择将逻辑放到客户端或者服务端
      */
-    private _isClient: boolean = true;
+    private _isClient: boolean = false;
     getIsClient() { return this._isClient; }
     setIsClient(val: boolean) { this._isClient = val; }
 
@@ -113,11 +113,15 @@ export default class UGameInstance extends UObject {
     public passTime: number = 0;
 
 
-
+    fps: number = 60;
+    frameTime: number = 0;
+    frameTimer: number = 0;
 
     /** 关卡管理 */
     //打开一个关卡
     public openWorld(world: UWorld, data: any = null, view) {
+        this.frameTime = 1 / this.fps;
+
         this.view = view;
         if (this.world != null) {
             console.warn("WARN: currentWorld not null,");
@@ -128,29 +132,40 @@ export default class UGameInstance extends UObject {
         this.world = world;
         this.world.gameInstance = this;
         this.world.init(data);
+
     }
+
+
+
 
     //当前关卡 网络处理+逻辑处理+本地输入循环
     public update(dt: number) {
+        this.deltaTime = dt;
+        this.passTime += dt;
         //TODO 锁定逻辑针，不受到操作卡住逻辑。
-        if (this.world != null) {
-            this.deltaTime = dt;
-            this.passTime += dt;
+        this.frameTimer += dt;
+        if (this.frameTimer > this.frameTime) {
+            this.frameTimer = 0;
 
-            //1.处理网络输入
-            this.processSyncData();
+            if (this.world != null) {
 
-            //2.用输入或状态更新世界，并且将本机的操作添加到发送队列
-            this.world.update(dt);
+                //1.处理网络输入
+                this.processSyncData();
 
-            //清除当前本地输入
-            this.input.Clear();
+                //2.用输入或状态更新世界，并且将本机的操作添加到发送队列
+                this.world.update(dt);
 
-            //3.发送当前帧输入
-            this.sendAllGameData();
+                //清除当前本地输入
+                this.input.Clear();
+
+                //3.发送当前帧输入
+                this.sendAllGameData();
+            }
+            this.passTime=0;
         }
+
     }
-    
+
     //TODO 切换关卡
     public switchWorld(oldWorldData) {
 

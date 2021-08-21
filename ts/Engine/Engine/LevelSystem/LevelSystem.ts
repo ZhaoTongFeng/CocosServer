@@ -5,6 +5,11 @@ import { XBase, xclass } from "../ReflectSystem/XBase";
 import { uu, UVec2 } from "../UMath";
 import UWorld from "../World";
 
+/**
+ * 多个关卡管理
+ * 关卡流送
+ * 关卡剔除
+ */
 @xclass(LevelSystem)
 export class LevelSystem extends UObject {
     instance: UGameInstance = null;

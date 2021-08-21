@@ -37,31 +37,37 @@ var USpriteComponent = /** @class */ (function (_super) {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.textureName = "";
         _this.needUpdateTexture = true;
-        _this.color = UMath_1.UColor.WHITE();
+        _this._color = UMath_1.UColor.WHITE();
         return _this;
     }
     USpriteComponent_1 = USpriteComponent;
-    USpriteComponent.prototype.getColor = function () {
-        return this.color;
-    };
-    USpriteComponent.prototype.setColor = function (val) {
-        this.color = val;
-        this.owner.world.gameInstance.getWorldView().onSpriteCompSetColor(this);
-    };
+    Object.defineProperty(USpriteComponent.prototype, "color", {
+        get: function () {
+            return this._color;
+        },
+        set: function (value) {
+            this._color = value;
+            if (this.owner.world.isClient) {
+                this.owner.world.gameInstance.getWorldView().onSpriteCompSetColor(this);
+            }
+        },
+        enumerable: false,
+        configurable: true
+    });
     USpriteComponent.prototype.unUse = function () {
         _super.prototype.unUse.call(this);
     };
     USpriteComponent.prototype.reUse = function () {
         _super.prototype.reUse.call(this);
-        this.setColor(UMath_1.UColor.WHITE());
+        this._color = UMath_1.UColor.WHITE();
         this.needUpdateTexture = true;
         this.textureName = "";
     };
     USpriteComponent.prototype.register = function () {
-        this.owner.world.gameInstance.getWorldView().addSpriteComponent(this);
+        this.owner.world.actorSystem.registerSprite(this);
     };
     USpriteComponent.prototype.unRegister = function () {
-        this.owner.world.gameInstance.getWorldView().removeSpriteComponent(this);
+        this.owner.world.actorSystem.unRegisterSprite(this);
     };
     //1.
     USpriteComponent.prototype.init = function (data) {
@@ -69,6 +75,9 @@ var USpriteComponent = /** @class */ (function (_super) {
     };
     USpriteComponent.prototype.markTextureDirty = function () {
         this.needUpdateTexture = true;
+    };
+    USpriteComponent.prototype.onComputeTransfor = function () {
+        _super.prototype.onComputeTransfor.call(this);
     };
     USpriteComponent.prototype.getTexture = function () {
         return this.textureName;
@@ -92,7 +101,7 @@ var USpriteComponent = /** @class */ (function (_super) {
     var USpriteComponent_1;
     __decorate([
         XBase_1.xproperty(UMath_1.UColor)
-    ], USpriteComponent.prototype, "color", void 0);
+    ], USpriteComponent.prototype, "_color", void 0);
     USpriteComponent = USpriteComponent_1 = __decorate([
         XBase_1.xclass(USpriteComponent_1)
     ], USpriteComponent);

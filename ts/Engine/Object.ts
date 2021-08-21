@@ -1,6 +1,4 @@
 import { XBase, xclass, xproperty } from "./Engine/ReflectSystem/XBase";
-
-
 type EvtData = { call: Function, thisObj }
 
 export class EvtBase extends XBase {

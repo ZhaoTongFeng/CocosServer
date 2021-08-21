@@ -74,7 +74,7 @@ var UComponent = /** @class */ (function (_super) {
         if (this.owner.getRootComp() == this) {
             this.owner.setRootComp(null);
         }
-        this.owner = null;
+        // this.owner = null;
     };
     UComponent.prototype.isRoot = function () {
         return this == this.owner.getRootComp();

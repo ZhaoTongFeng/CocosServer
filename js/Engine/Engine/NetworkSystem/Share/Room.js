@@ -32,27 +32,27 @@ var Room = /** @class */ (function (_super) {
         _this.users = new Map();
         //房主
         _this.owner = null;
+        _this.roomManager = null;
+        _this.gameSync = null;
+        _this.gameInstance = null;
         return _this;
     }
     Room_1 = Room;
+    Room.prototype.getUserCount = function () { return this.users.size; };
     //玩家创建房间
-    Room.prototype.onAdd = function (user) {
-        //记录房主信息
-        this.owner = user;
-        this.users.set(user.id_user, user);
-    };
+    Room.prototype.onAdd = function (user) { };
     //玩家加入房间
-    Room.prototype.onJoin = function (user) {
-        user.id_room = this.id;
-        this.users.set(user.id_user, user);
-    };
+    Room.prototype.onJoin = function (user) { };
     //玩家退出房间
-    Room.prototype.onExit = function (user) {
-        this.users.delete(user.id_user);
-        user.id_room = "";
-    };
+    Room.prototype.onExit = function (user) { };
     //房间被删除
-    Room.prototype.onDel = function () {
+    Room.prototype.onDel = function (user) { };
+    //转发同步数据到GameInstance
+    Room.prototype.onSyncGame = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
     };
     var Room_1;
     __decorate([

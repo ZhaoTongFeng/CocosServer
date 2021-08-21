@@ -25,70 +25,79 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var Object_1 = __importDefault(require("../Object"));
+var ActorSystem_1 = __importDefault(require("./ActorSystem/ActorSystem"));
 var CollisionSystem_1 = __importDefault(require("./CollisionSystem/CollisionSystem"));
+var DebugSystem_1 = require("./DebugSystem/DebugSystem");
 var Enums_1 = require("./Enums");
+var InputSystem_1 = require("./InputSystem/InputSystem");
 var XBase_1 = require("./ReflectSystem/XBase");
-var UMath_1 = require("./UMath");
 /**
- * 一个关卡
+ * 一个关卡 逻辑关卡
  * 生命周期：从创建关卡到结束
  */
 var UWorld = /** @class */ (function (_super) {
     __extends(UWorld, _super);
     function UWorld() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        /** 关卡状态 */
+        _this.isDebug = false;
+        _this.isUpdating = false;
+        _this.gameState = Enums_1.GameState.Paused;
         _this.actors = [];
         _this.actors_kill = [];
         _this.actors_peending = [];
-        _this.isUpdating = false;
-        _this.gameState = Enums_1.GameState.Paused;
-        //系统
-        _this.collisionSystem = null;
-        _this.gameMode = null;
-        _this.player = null;
-        _this.isDebug = false;
-        _this.networkTimer = 0;
-        _this.gameInstance = null;
         _this.actorPool = new Map();
         _this.componentPoos = new Map();
         _this.maxActorCount = 0;
+        /** 系统 */
+        _this.collisionSystem = null;
+        //controller在这里注册，收到网络请求时统一进行处理
+        _this.inputSystem = null;
+        _this.debugSystem = null;
+        //对象管理
+        _this.actorSystem = null;
+        /** 指针 */
+        _this.gameInstance = null;
+        _this.gameMode = null;
+        _this.player = null;
+        _this.usePool = true;
+        _this.isClient = false;
         return _this;
     }
     UWorld_1 = UWorld;
-    //TODO 可以加一个时钟
-    /**
-     * 初始化关卡
-     */
+    // 被创建时 初始化关卡
     UWorld.prototype.init = function (data) {
         if (data === void 0) { data = null; }
         _super.prototype.init.call(this, data);
-        //DO SOMETHING
         this.collisionSystem = new CollisionSystem_1.default();
-        ;
-        this.collisionSystem.world = this;
+        this.collisionSystem.init(this);
+        this.inputSystem = new InputSystem_1.UInputSystem();
+        this.inputSystem.init(this);
+        this.debugSystem = new DebugSystem_1.UDebugSystem();
+        this.debugSystem.init(this);
+        this.actorSystem = new ActorSystem_1.default();
+        this.actorSystem.init(this);
         this.gameState = Enums_1.GameState.Playing;
+        this.isClient = this.gameInstance.getIsClient();
     };
-    /**
-     * 帧循环，被Instance初始化之后，会被放到CC的Update下面
-     * @param dt
-     */
+    //释放关卡
+    UWorld.prototype.destory = function () {
+        this.actors = [];
+        this.actors_kill = [];
+        this.actors_peending = [];
+        this.isUpdating = false;
+        this.gameState = Enums_1.GameState.Paused;
+    };
+    //更新逻辑主循环
+    //帧循环，被Instance初始化之后，会被放到CC的Update下面
     UWorld.prototype.update = function (dt) {
         var _this = this;
         if (this.gameState == Enums_1.GameState.Playing) {
-            // //网络输入
-            // UNetworkSystem.Ins.receiveFlag = true;
-            // //处理，清除，交换
-            // UNetworkSystem.Ins.receiveBuffer.forEach(msg => {
-            //     console.log(msg);
-            // });
-            // UNetworkSystem.Ins.receiveBuffer = [];
-            // UNetworkSystem.Ins.receiveBuffer.concat(UNetworkSystem.Ins.receiveBufferTemp);
-            // UNetworkSystem.Ins.receiveBufferTemp = [];
-            // UNetworkSystem.Ins.receiveFlag = false;
             //本地输入
             this.actors.forEach(function (ac) {
                 ac.processInput(_this.gameInstance.input);
             });
+            //TODO 如果是单机模式则直接在这里消耗指令
             //更新
             this.isUpdating = true;
             this.actors.forEach(function (actor) {
@@ -109,66 +118,40 @@ var UWorld = /** @class */ (function (_super) {
                 if (this.actors[i].state == Enums_1.UpdateState.Dead) {
                     this.actors[i].onDestory();
                     //添加到对象池
-                    this.actors[i].unUse();
-                    if (this.actors[i] != null) {
-                        var clsName = this.actors[i].constructor.name;
-                        var arr = this.actorPool.get(clsName);
-                        arr.push(this.actors[i]);
+                    if (this.usePool) {
+                        this.actors[i].unUse();
+                        if (this.actors[i] != null) {
+                            var clsName = this.actors[i].constructor.name;
+                            var arr = this.actorPool.get(clsName);
+                            arr.push(this.actors[i]);
+                        }
                     }
                     this.actors.splice(i, 1);
                 }
             }
-            // //每二十针发送一次消息
-            // this.networkTimer += dt;
-            // if (this.networkTimer > 1) {
-            //     //模拟发送消息
-            //     UNetworkSystem.Ins.send(dt + "");
-            //     UNetworkSystem.Ins.sendAll();
-            //     this.networkTimer = 0;
-            // }
         }
     };
-    UWorld.prototype.updateWorld = function (dt) {
-    };
-    UWorld.prototype.drawDebug = function (graphic) {
-        var winSize = this.gameInstance.getWorldView().winSize;
-        graphic.drawRect(winSize.x * -1, winSize.y * -1, winSize.x * 2, winSize.y * 2, UMath_1.UColor.BLUE());
-        this.actors.forEach(function (actor) {
-            actor.drawDebug(graphic);
-        });
-    };
-    /**
-     * 释放关卡
-     */
-    UWorld.prototype.destory = function () {
-        this.actors = [];
-        this.actors_kill = [];
-        this.actors_peending = [];
-        this.isUpdating = false;
-        this.gameState = Enums_1.GameState.Paused;
-    };
-    /**
-     * 在程序中生成Actor
-     * TODO 这里做对象池，所有的生成都通过这个函数
-     */
+    //Override Actor 更新完成之后操作，比如碰撞检测
+    UWorld.prototype.updateWorld = function (dt) { };
+    //在程序中生成Actor，所有actor的创建，必须通过这个注册
     UWorld.prototype.spawn = function (c) {
         var actor = null;
-        var clsName = c.name;
-        if (this.actorPool.has(clsName) == false) {
-            this.actorPool.set(clsName, []);
-        }
-        var arr = this.actorPool.get(clsName);
-        if (arr.length == 0) {
-            // console.log("New Actor", clsName);
-            actor = new c();
-        }
-        else {
-            actor = arr.pop();
-            actor = actor;
-            actor.reUse();
+        if (this.usePool) {
+            var clsName = c.name;
+            if (this.actorPool.has(clsName) == false) {
+                this.actorPool.set(clsName, []);
+            }
+            var arr = this.actorPool.get(clsName);
+            if (arr.length == 0) {
+                actor = new c();
+            }
+            else {
+                actor = arr.pop();
+                actor = actor;
+                actor.reUse();
+            }
         }
         if (actor == null) {
-            console.log("NULL New Actor", clsName);
             actor = new c();
         }
         actor.init(this);
@@ -176,28 +159,33 @@ var UWorld = /** @class */ (function (_super) {
     };
     UWorld.prototype.spawnComponent = function (actor, c) {
         var comp = null;
-        var clsName = c.name;
-        if (this.componentPoos.has(clsName) == false) {
-            this.componentPoos.set(clsName, []);
-        }
-        var arr = this.componentPoos.get(clsName);
-        if (arr.length == 0) {
-            // console.log("New Component", clsName);
-            comp = new c();
-        }
-        else {
-            comp = arr.pop();
-            comp = comp;
-            comp.reUse();
+        if (this.usePool) {
+            var clsName = c.name;
+            if (this.componentPoos.has(clsName) == false) {
+                this.componentPoos.set(clsName, []);
+            }
+            var arr = this.componentPoos.get(clsName);
+            if (arr.length == 0) {
+                // console.log("New Component", clsName);
+                comp = new c();
+            }
+            else {
+                comp = arr.pop();
+                comp = comp;
+                comp.reUse();
+            }
         }
         if (comp == null) {
-            console.log("NULL New Component", clsName);
             comp = new c();
         }
         comp.init(actor);
         return comp;
     };
-    /**增删Actor */
+    /**
+     * 增加Actor
+     * 需要考虑在更新过程中添加的情况，而删除Actor，不需要考虑，因为全部都是这一帧结束后删除
+     * @param actor
+     */
     UWorld.prototype.addActor = function (actor) {
         if (this.isUpdating) {
             this.actors_peending.push(actor);
@@ -211,17 +199,6 @@ var UWorld = /** @class */ (function (_super) {
             // console.log("最大Actor数量", this.maxActorCount);
         }
         // console.log("add actor num:",this.actors.length);
-    };
-    UWorld.prototype.removeActor = function (actor) {
-        var index = this.actors.indexOf(actor);
-        if (index > -1) {
-            this.actors.splice(index, 1);
-        }
-        index = this.actors_peending.indexOf(actor);
-        if (index > -1) {
-            this.actors_peending.splice(index, 1);
-        }
-        console.log("after remove actor num:", this.actors.length);
     };
     var UWorld_1;
     UWorld = UWorld_1 = __decorate([

@@ -10,7 +10,8 @@
   "devDependencies": {},
   "scripts": {
     "cp": "node ./script/copy.js",
-    "up":"node ./script/update.js"
+    "up": "node ./script/update.js",
+    "server": "node ./js/Main.js"
   },
   "author": "",
   "license": "ISC",

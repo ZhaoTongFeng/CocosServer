@@ -56,6 +56,10 @@ var UCollisionSystem = /** @class */ (function (_super) {
         return _this;
     }
     UCollisionSystem_1 = UCollisionSystem;
+    UCollisionSystem.prototype.init = function (world) {
+        _super.prototype.init.call(this, world);
+        this.world = world;
+    };
     //数据结构，后面可以考虑使用索引，方便快速取出和删除，key就是obj.id
     // collisions:Map<string,UCollisionComponent> = new Map();
     // indexes:number[];//一帧中排序结果
@@ -118,14 +122,16 @@ var UCollisionSystem = /** @class */ (function (_super) {
         this.sort();
         this.testCount = 0;
         for (var i = 0; i < this.collisions.length; i++) {
-            if (this.collisions[i].owner.state == Enums_1.UpdateState.Dead) {
+            if (this.collisions[i].state == Enums_1.UpdateState.Dead ||
+                this.collisions[i].owner.state == Enums_1.UpdateState.Dead) {
                 continue;
             }
             //TODO 需要将Index保存到每个Box里面，然后直接用下面的方法去比较即可，如果发生变化，更新Box的Index
             var a = this.collisions[i];
             var max = a.getMaxX();
             for (var j = i + 1; j < this.collisions.length; j++) {
-                if (this.collisions[j].owner.state == Enums_1.UpdateState.Active) {
+                if (this.collisions[j].state == Enums_1.UpdateState.Active &&
+                    this.collisions[j].owner.state == Enums_1.UpdateState.Active) {
                     var b = this.collisions[j];
                     if (b.getMinX() > max) {
                         break;
@@ -159,10 +165,10 @@ var UCollisionSystem = /** @class */ (function (_super) {
             this.maxTestCount = this.testCount;
         }
         this.testTotalCount += this.testCount;
-        this.frameCount++;
-        if (this.frameCount % 60 == 0) {
-            // this.print();
-        }
+        // this.frameCount++;
+        // if (this.frameCount % 60 == 0) {
+        //     this.print();
+        // }
     };
     UCollisionSystem.prototype.print = function () {
         this.avgCount = (this.totalCount / this.frameCount);

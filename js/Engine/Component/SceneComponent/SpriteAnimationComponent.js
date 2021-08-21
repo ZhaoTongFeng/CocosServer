@@ -34,7 +34,8 @@ var USpriteAnimationComponent = /** @class */ (function (_super) {
     __extends(USpriteAnimationComponent, _super);
     function USpriteAnimationComponent() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.textureNames = [];
+        //动画ID
+        _this.texIndex = null;
         _this.isLoop = true;
         _this.isFinish = true;
         _this.fps = 16;
@@ -64,7 +65,7 @@ var USpriteAnimationComponent = /** @class */ (function (_super) {
     };
     USpriteAnimationComponent.prototype.reUse = function () {
         _super.prototype.reUse.call(this);
-        this.textureNames = [];
+        this.texIndex = null;
         this.isLoop = true;
         this.isFinish = true;
         this.fps = 16;
@@ -73,18 +74,7 @@ var USpriteAnimationComponent = /** @class */ (function (_super) {
         this.timer = 0;
     };
     USpriteAnimationComponent.prototype.setAnimation = function (name) {
-        var textures = USpriteAnimationComponent_1.Animations.get(name);
-        this.textureNames = textures || [];
-    };
-    //DISABLE，不要一个一个的设置名称，动画名称都是一样的，全部放到一起。
-    USpriteAnimationComponent.prototype.setTextures = function (textures) {
-        if (textures.length != 0) {
-            if (this.textureNames == null) {
-                this.textureNames = [];
-            }
-            this.textureNames = textures;
-            this.setTexture(textures[0]);
-        }
+        this.texIndex = name;
     };
     USpriteAnimationComponent.prototype.setFPS = function (newFps) {
         this.fps = newFps;
@@ -97,13 +87,17 @@ var USpriteAnimationComponent = /** @class */ (function (_super) {
     };
     USpriteAnimationComponent.prototype.update = function (dt) {
         _super.prototype.update.call(this, dt);
-        if (this.textureNames.length != 0) {
+        if (!this.owner.world.isClient) {
+            return;
+        }
+        if (this.texIndex != null) {
+            var textures = USpriteAnimationComponent_1.Animations.get(this.texIndex);
             if (this.isFinish == false) {
                 this.timer += dt;
                 if (this.timer > this.frameTime) {
                     this.timer = 0;
-                    var newFrameIndex = (this.frameIndex + 1) % this.textureNames.length;
-                    this.setTexture(this.textureNames[newFrameIndex]);
+                    var newFrameIndex = (this.frameIndex + 1) % textures.length;
+                    this.setTexture(textures[newFrameIndex]);
                     if (newFrameIndex < this.frameIndex && this.isLoop == false) {
                         this.isFinish = true;
                     }

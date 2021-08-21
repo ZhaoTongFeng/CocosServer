@@ -21,21 +21,17 @@ import UWorld from "./World";
  */
 @xclass(UWorldView)
 export default class UWorldView extends XBase {
+    //调试工具
     graphic: UGraphic = new UGraphic();
 
     //屏幕大小
     winSize: UVec2;
 
-    fps: number = 60;
-    frameTime: number = 1 / 60;
-
     gameInstance: UGameInstance = null;
 
-
     //退出和进入此场景操作
+    //SEVER 服务器直接从这里开始 
     public onEnter(world: UWorld, data = null) {
-
-        //SEVER 服务器直接从这里开始        
         this.gameInstance.openWorld(world, data, this);
     }
 
@@ -43,36 +39,11 @@ export default class UWorldView extends XBase {
         this.gameInstance.closeWorld();
     }
 
-
-    //VIew更新入口
+    //Client的逻辑更新入口
     public update(dt) {
         if (this.gameInstance) {
-            dt = UMath.clamp(dt, 0, this.frameTime);
-            //1.处理输入 输入已经发送到GameInstance的Input中，在World中会被转发到各个Ac
-
-            //2.处理更新
             this.gameInstance.update(dt);
-
-
-            //3.输出图像
-            this.updateView();
-
-            this.graphic.begDrawDebug();
-            this.gameInstance.drawDebug(this.graphic);
         }
-
-    }
-
-
-    sceneComponents: USceneComponent[] = [];
-    
-    updateView() {
-        //3.处理输出 只需要更新Scene中draw方法即可
-        this.sceneComponents.forEach(comp => {
-            if (comp.visiblity == Visiblity.Visible) {
-                comp.draw(this.graphic);
-            }
-        });
     }
 
     addSceneComponent(comp: USceneComponent) { }
@@ -88,7 +59,7 @@ export default class UWorldView extends XBase {
     onSpriteCompSetColor(comp: USpriteComponent) { }
     onDrawTexture(comp: USpriteComponent) { }
 
-    cameraMap: Map<string, UCameraComponent> = new Map();
+
     addCameraComponent(comp: UCameraComponent) { }
     removeCameraComponent(comp: UCameraComponent) { }
     onGetSceneCameraProperty(comp: UCameraComponent) { }

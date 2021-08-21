@@ -27,8 +27,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var XBase_1 = require("../../ReflectSystem/XBase");
 var Manager_1 = __importDefault(require("./Manager"));
 var NetCmd_1 = require("./NetCmd");
-var Room_1 = __importDefault(require("./Room"));
-var UserManager_1 = __importDefault(require("./UserManager"));
 /**
  * 房间管理器
  * 操作放在XXX里面，onXXX处理客户端请求
@@ -42,10 +40,9 @@ var RoomManager = /** @class */ (function (_super) {
     __extends(RoomManager, _super);
     function RoomManager() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.curRoom = null;
+        //游戏实例，外部绑定
+        _this.gameInstance = null;
         _this.rooms = new Map();
-        //请求服务器创建一个房间
-        _this.optLock = false;
         return _this;
     }
     RoomManager_1 = RoomManager;
@@ -53,12 +50,7 @@ var RoomManager = /** @class */ (function (_super) {
         return this.rooms.get(id);
     };
     //内部操作
-    RoomManager.prototype.add = function (id_room) {
-        var room = new Room_1.default();
-        room.id = id_room;
-        this.rooms.set(id_room, room);
-        return room;
-    };
+    RoomManager.prototype.add = function (id_room) { };
     RoomManager.prototype.delete = function (room) {
         this.rooms.delete(room.id);
     };
@@ -70,176 +62,56 @@ var RoomManager = /** @class */ (function (_super) {
         ns.register(NetCmd_1.NetCmd.ROOM_EXIT, this.onExit, this);
         ns.register(NetCmd_1.NetCmd.ROOM_DEL, this.onDel, this);
         ns.register(NetCmd_1.NetCmd.ROOM_LIST, this.onGetList, this);
+        ns.register(NetCmd_1.NetCmd.SYNC_GAME, this.onSyncGame, this);
     };
     //获取房间列表
     RoomManager.prototype.getList = function () {
-        var out = {};
-        this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_LIST, out);
-    };
-    RoomManager.prototype.onGetList = function (obj) {
-        console.log(obj);
-    };
-    RoomManager.prototype.isCanOpt = function () {
-        if (this.optLock) {
-            console.warn("操作中");
-            return false;
-        }
-        else {
-            return true;
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
     };
-    RoomManager.prototype.lockOpt = function () {
-        this.optLock = true;
-    };
-    RoomManager.prototype.unLock = function () {
-        this.optLock = false;
-    };
-    RoomManager.prototype.create = function () {
-        if (this.curRoom != null) {
-            console.warn("目前已经在有一个房间");
-            return;
-        }
-        if (this.isCanOpt()) {
-            this.lockOpt();
-            var out = {};
-            this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_ADD, out);
-            console.log("Client:请求创建房间");
+    RoomManager.prototype.onGetList = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
     };
     //服务器把房间创建好
-    RoomManager.prototype.onCreate = function (obj) {
-        this.unLock();
-        var code = obj["code"];
-        if (code != 0) {
-            console.warn("Client:房间创建失败", code);
-            return;
-        }
-        var id_room = obj["id_room"];
-        var room = this.add(id_room);
-        this.curRoom = room;
-        room.onAdd(UserManager_1.default.Ins.locUser);
-        console.log("Client:房间创建成功", room);
-    };
-    //请求加入一个房间
-    RoomManager.prototype.join = function (id_room) {
-        if (this.isCanOpt()) {
-            this.lockOpt();
-            if (!this.curRoom) {
-                var out = {
-                    id_room: id_room
-                };
-                this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_JOIN, out);
-                console.log("Client:请求加入房间", id_room);
-            }
-            else {
-                console.log("当前房间不为空");
-            }
+    RoomManager.prototype.onCreate = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
     };
     //当有人加入房间(不止是自己)
-    RoomManager.prototype.onJoin = function (obj) {
-        var _this = this;
-        this.unLock();
-        var code = obj["code"];
-        if (code != 0) {
-            console.warn("加入失败");
-            return;
-        }
-        var id_user = obj["id_user"];
-        var id_room = obj["id_room"];
-        if (UserManager_1.default.Ins.locUser.id_user == id_user) {
-            //加入者检查是否需要实例化这个房间
-            var room = this.getRoomById(id_room);
-            if (!room) {
-                room = this.add(id_room);
-            }
-            this.curRoom = room;
-            //并获取这个房间的最新状态，这里直接返回了，所以不需要额外去获取，但理论上，应该分开
-            var ids = obj["ids"];
-            ids.forEach(function (id) {
-                var user = _this.getUserById(id);
-                if (!user) {
-                    user = UserManager_1.default.Ins.add(id_user);
-                }
-            });
-            console.log("Client:加入房间成功", this.curRoom);
-        }
-        else {
-            //房间其他人,只需添加这一个用户
-            var user = this.getUserById(id_user);
-            if (!user) {
-                user = UserManager_1.default.Ins.add(id_user);
-            }
-            this.curRoom.onJoin(user);
-            console.log("Client:XXX加入房间", this.curRoom);
-        }
-    };
-    //退出这个房间
-    RoomManager.prototype.exit = function () {
-        if (this.isCanOpt()) {
-            this.lockOpt();
-            if (this.curRoom) {
-                var out = {
-                    id_room: this.curRoom.id
-                };
-                this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_EXIT, out);
-            }
-            else {
-                console.warn("当前房间为空");
-            }
+    RoomManager.prototype.onJoin = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
     };
     //当有人退出房间(不止是自己)
-    RoomManager.prototype.onExit = function (obj) {
-        this.unLock();
-        var code = obj["code"];
-        if (code != 0) {
-            console.log("退出失败");
-            return;
-        }
-        var id_user = obj["id_user"];
-        var id_room = obj["id_room"];
-        var room = this.getRoomById(id_room);
-        //先退出房间
-        var user = this.getUserById(id_user);
-        room.onExit(user);
-        if (UserManager_1.default.Ins.locUser.id_user == id_user) {
-            //如果是退出者
-            this.curRoom = null;
-            console.log("Client:退出成功", this.rooms);
-        }
-        else {
-            //其他人
-            console.log("Client:XXX退出房间", user);
-        }
-        if (room.users.size == 0) {
-            this.delete(room);
-        }
-        console.log(this.rooms);
-    };
-    //请求删除房间
-    RoomManager.prototype.del = function () {
-        if (this.isCanOpt()) {
-            this.lockOpt();
-            if (this.curRoom) {
-                var out = {
-                    id_room: this.curRoom.id
-                };
-                this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_DEL, out);
-            }
+    RoomManager.prototype.onExit = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
     };
     //删除房间请求来自客户端
-    RoomManager.prototype.onDel = function (obj) {
-        this.unLock();
-        console.log("房间被删除", obj);
-        var id_room = obj["id_room"];
-        var room = this.getRoomById(id_room);
-        room.onDel();
-        this.delete(room);
+    RoomManager.prototype.onDel = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onSyncGame = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
     };
     var RoomManager_1;
-    RoomManager.Ins = new RoomManager_1();
     __decorate([
         XBase_1.xproperty(Map)
     ], RoomManager.prototype, "rooms", void 0);

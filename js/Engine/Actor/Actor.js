@@ -55,7 +55,7 @@ var AActor = /** @class */ (function (_super) {
     //Override
     AActor.prototype.reUse = function () {
         _super.prototype.reUse.call(this);
-        this.world = null;
+        // this.world = null;
         this.components = [];
         this.rootComponent = null;
         this.sceneComponent = null;
@@ -64,12 +64,14 @@ var AActor = /** @class */ (function (_super) {
         this.state = Enums_1.UpdateState.Peeding;
     };
     //Override
+    //被创建时 立即调用
     AActor.prototype.init = function (world) {
         _super.prototype.init.call(this, world);
         this.world = world;
         this.world.addActor(this);
     };
     //Override
+    //真正被加入场景中调用
     AActor.prototype.onInit = function () {
         this.state = Enums_1.UpdateState.Active;
     };
@@ -84,14 +86,18 @@ var AActor = /** @class */ (function (_super) {
     AActor.prototype.processSelfInput = function (input) { };
     AActor.prototype.processChildrenInput = function (input) {
         this.components.forEach(function (comp) {
-            comp.processInput(input);
+            if (comp.state == Enums_1.UpdateState.Active) {
+                comp.processInput(input);
+            }
         });
     };
     AActor.prototype.computeWorldTransform = function () {
         if (this.reComputeTransform) {
             this.reComputeTransform = false;
             this.components.forEach(function (comp) {
-                comp.onComputeTransfor();
+                if (comp.state == Enums_1.UpdateState.Active) {
+                    comp.onComputeTransfor();
+                }
             });
         }
     };
@@ -108,7 +114,9 @@ var AActor = /** @class */ (function (_super) {
     AActor.prototype.updateActor = function (dt) { };
     AActor.prototype.updateComponents = function (dt) {
         this.components.forEach(function (comp) {
-            comp.update(dt);
+            if (comp.state == Enums_1.UpdateState.Active) {
+                comp.update(dt);
+            }
         });
     };
     //输出，实际上是更新CC的Node去输出
@@ -120,26 +128,34 @@ var AActor = /** @class */ (function (_super) {
     AActor.prototype.drawDebugActor = function (graphic) { };
     AActor.prototype.drawDebugComponents = function (graphic) {
         this.components.forEach(function (comp) {
-            comp.drawDebug(graphic);
+            if (comp.state == Enums_1.UpdateState.Active) {
+                comp.drawDebug(graphic);
+            }
         });
     };
     //销毁
     AActor.prototype.destory = function () {
         this.state = Enums_1.UpdateState.Dead;
+        this.components.forEach(function (comp) {
+            comp.state = Enums_1.UpdateState.Dead;
+        });
     };
     //Override
     AActor.prototype.onDestory = function () {
         var _this = this;
         this.components.forEach(function (comp) {
             comp.onDestory();
-            //添加到对象池
-            if (comp != null) {
-                comp.unUse();
-                var clsName = comp.constructor.name;
-                var arr = _this.world.componentPoos.get(clsName);
-                arr.push(comp);
-            }
+            _this.checkComponentPool(comp);
         });
+    };
+    AActor.prototype.checkComponentPool = function (comp) {
+        //添加到对象池
+        if (comp != null && this.world.usePool) {
+            comp.unUse();
+            var clsName = comp.constructor.name;
+            var arr = this.world.componentPoos.get(clsName);
+            arr.push(comp);
+        }
     };
     /**增删Component */
     AActor.prototype.spawnComponent = function (c) {
@@ -154,6 +170,7 @@ var AActor = /** @class */ (function (_super) {
         var index = this.components.indexOf(comp);
         if (index > -1) {
             this.components[index].onDestory();
+            this.checkComponentPool(comp);
             this.components.splice(index, 1);
         }
         // console.log("remove comp num:",this.components.length);
