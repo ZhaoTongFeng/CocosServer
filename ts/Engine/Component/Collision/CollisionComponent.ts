@@ -1,5 +1,6 @@
 
 
+import AActor from "../../Actor/Actor";
 import { xclass, xproperty } from "../../Engine/ReflectSystem/XBase";
 import { UVec2, uu } from "../../Engine/UMath";
 import UComponent from "../Component";
@@ -11,6 +12,7 @@ import USceneComponent from "../SceneComponent/SceneComponent";
  */
 @xclass(UCollisionComponent)
 export default class UCollisionComponent extends UComponent {
+    
     @xproperty(UVec2)
     protected padding: UVec2 = uu.v2();
 
@@ -36,13 +38,18 @@ export default class UCollisionComponent extends UComponent {
 
     public init(obj: any) {
         super.init(obj);
-        if (!obj) {
-            return;
+
+        //碰撞检测只在服务器
+        if (this.owner.world.isClient == false) {
+            this.owner.world.collisionSystem.insert(this);
         }
+    }
+    onLoad(ac: AActor) {
+        super.onLoad(ac);
+
         if (this.owner.getCollision() == null) {
             this.owner.setCollision(this);
         }
-        this.owner.world.collisionSystem.insert(this);
     }
 
     onDestory() {

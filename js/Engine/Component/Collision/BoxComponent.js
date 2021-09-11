@@ -67,9 +67,6 @@ var UBoxComponent = /** @class */ (function (_super) {
         return this.worldAabb.max.x;
     };
     var UBoxComponent_1;
-    __decorate([
-        XBase_1.xproperty(UMath_1.AABB)
-    ], UBoxComponent.prototype, "worldAabb", void 0);
     UBoxComponent = UBoxComponent_1 = __decorate([
         XBase_1.xclass(UBoxComponent_1)
     ], UBoxComponent);

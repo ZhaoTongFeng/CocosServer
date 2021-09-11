@@ -12,7 +12,7 @@ import UserManager from "./UserManager";
  */
 @xclass(NetworkSystem)
 export default class NetworkSystem extends UObject {
-
+    static isServer = true;
 
     public isDebug: boolean = true;
     public delay: number = 0;
@@ -56,7 +56,7 @@ export default class NetworkSystem extends UObject {
     roomManager: RoomManager = null;
     //初始化网络相关系统
     public init() {
-        this.register(NetCmd.HEART, this.onHeart, this);
+        
     }
 
     /************************************************
@@ -66,5 +66,10 @@ export default class NetworkSystem extends UObject {
 
     protected onClose(...args) { }
     protected onHeart(...args) { }
-    public login(...args){}
+    public login(...args) { }
+
+
+    public getCurrentTime() {
+        return new Date().getTime();
+    }
 }

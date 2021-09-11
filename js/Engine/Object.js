@@ -98,6 +98,9 @@ var UObject = /** @class */ (function (_super) {
         UObject_1.GLOBALID++;
         return id;
     };
+    //接收网络数据
+    UObject.prototype.receiveData = function (obj) {
+    };
     Object.defineProperty(UObject.prototype, "id", {
         get: function () {
             return this._id;
@@ -144,5 +147,5 @@ var UObject = /** @class */ (function (_super) {
         XBase_1.xclass(UObject_1)
     ], UObject);
     return UObject;
-}(XBase_1.XBase));
+}(EvtBase));
 exports.default = UObject;

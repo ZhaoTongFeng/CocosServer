@@ -1,11 +1,9 @@
 
-import { xclass, XBase } from "../../ReflectSystem/XBase";
+import { xclass } from "../../ReflectSystem/XBase";
 import { NetCmd } from "../Share/NetCmd";
 import NetworkSystem from "../Share/NetworkSystem";
 import ServerRoomManager from "./ServerRoomManager";
-import RoomManager from "./ServerRoomManager";
 import ServerUserManager from "./ServerUserManager";
-import UserManager from "./ServerUserManager";
 
 @xclass(ServerNetworkSystem)
 export default class ServerNetworkSystem extends NetworkSystem {
@@ -26,7 +24,7 @@ export default class ServerNetworkSystem extends NetworkSystem {
     }
 
     public getKey(conn: any) { return conn["key"]; }
-    
+
     /************************************************
      * 发送
      ************************************************/
@@ -39,7 +37,7 @@ export default class ServerNetworkSystem extends NetworkSystem {
     public broadcast(msg: string) {
         this._broadcast(this.ws, msg);
     }
-    public sendCmd(conn, cmd: number, obj: Object | string) {
+    public sendCmd(conn, cmd: number, obj: Object | string = {}) {
         try {
             obj["opt"] = cmd;
             let str = null;
@@ -76,6 +74,8 @@ export default class ServerNetworkSystem extends NetworkSystem {
         this.userManager.init(this);
         this.roomManager = new ServerRoomManager();
         this.roomManager.init(this);
+        this.register(NetCmd.DEV_SERVER_STATUS, this.onServerInfo, this);
+        this.register(NetCmd.HEART, this.onHeart, this);
     }
 
 
@@ -93,7 +93,26 @@ export default class ServerNetworkSystem extends NetworkSystem {
 
     //心跳包
     onHeart(key, conn, obj) {
-        this.sendCmd(conn, NetCmd.HEART, {});
+        let user = this.getUserByKey(key);
+        let out = {}
+        let data = obj["data"];
+        if (user) {
+
+
+            let sendTime = data[0];//这帧发送时刻
+            let curTime = this.getCurrentTime();//当前时刻
+
+            let serverTick = user.serverHartTick;//上一帧发送时刻
+            let receiveTime = data[1];//上一帧接收时刻
+
+
+            user.delay_clientToServer = (curTime - sendTime);
+            user.delay_serverToClient = receiveTime - serverTick;
+
+            user.serverHartTick = curTime;
+        }
+
+        this.sendCmd(conn, NetCmd.HEART, out);
     }
 
     //连接断开
@@ -101,8 +120,8 @@ export default class ServerNetworkSystem extends NetworkSystem {
         let key = this.getKey(conn);
         this.connPeeding.delete(key);
         this.connMap.delete(key);
-        
-        let userMng= this.userManager as ServerUserManager;
+
+        let userMng = this.userManager as ServerUserManager;
         userMng.onClose(key, conn);
 
         console.log("连接断开", conn["key"], code, reason)
@@ -116,7 +135,20 @@ export default class ServerNetworkSystem extends NetworkSystem {
     }
 
 
+    onServerInfo(key, conn, obj) {
+        let userManger = this.userManager as ServerUserManager;
+        let roomManager = this.roomManager as ServerRoomManager;
 
+        let out = {
+            "ped": this.connPeeding.size,
+            "es": this.connMap.size,
+            "uk": userManger.userKeyMap.size,
+            "uid": userManger.userIdMap.size,
+            "ulose": userManger.userLoseMap.size,
+            "rooms": roomManager.rooms.size
+        }
+        this.sendCmd(conn, NetCmd.DEV_SERVER_STATUS, out);
+    }
 
 
 

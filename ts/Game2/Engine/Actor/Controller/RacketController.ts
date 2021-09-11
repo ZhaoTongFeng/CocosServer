@@ -1,5 +1,5 @@
 import APlayerController from "../../../../Engine/Actor/Controller/PlayerController";
-import { UInput } from "../../../../Engine/Engine/InputSystem/Input";
+import { UInputSystem } from "../../../../Engine/Engine/InputSystem/InputSystem";
 import { xclass } from "../../../../Engine/Engine/ReflectSystem/XBase";
 import UGraphic from "../../../../Engine/Engine/UGraphic";
 import { uu } from "../../../../Engine/Engine/UMath";
@@ -13,7 +13,7 @@ export default class ARacketController extends APlayerController {
     racketMovement: RacketMovement = null;
 
     //将本地操作发送
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
         if (input.isTouch) {
             let pos = input.clickPos;
             this.sendData(pos.toJSON());

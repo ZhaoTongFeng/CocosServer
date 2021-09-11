@@ -19,6 +19,8 @@ export enum ConnectionStatus {
 @xclass(ClientNetworkSystem)
 export default class ClientNetworkSystem extends NetworkSystem {
 
+    static Ins: ClientNetworkSystem = null
+
     //TODO 为了测试方便直接在这儿发，实际上还是房间内进行发送，服务器和客户端保持一致
     //发送这一frame全部数据
     sendAllGameInput(obj) {
@@ -34,6 +36,7 @@ export default class ClientNetworkSystem extends NetworkSystem {
     public conState: ConnectionStatus = ConnectionStatus.NO;
 
     public delay: number = 0;
+    
     // protected url = "wss://www.llag.net/game/id=123";
     protected url = "ws://localhost:52312";
     protected ws: WebSocket = null;
@@ -46,22 +49,23 @@ export default class ClientNetworkSystem extends NetworkSystem {
 
     public getLocId() {
         let userMng = this.userManager as ClientUserManager;
-        return userMng.locUser.id_user;
+        return userMng.id_loc;
     }
     public isThisUser(id_user) {
         let userMng = this.userManager as ClientUserManager;
-        return userMng.locUser.id_user == id_user
+        return userMng.id_loc == id_user
     }
 
     /************************************************
      * 发送
      ************************************************/
-    public sendCmd(cmd: number, obj: object) {
+    public sendCmd(cmd: number, obj: object = {}) {
         obj["opt"] = cmd;
         let str = JSON.stringify(obj);
         this.ws.send(str);
-
-        console.log("Client", obj);
+        if (cmd != NetCmd.HEART) {
+            // console.log("Client", obj);
+        }
     }
 
     /************************************************
@@ -73,14 +77,18 @@ export default class ClientNetworkSystem extends NetworkSystem {
         let str = e.data;
         let obj = JSON.parse(str);
         let opt = Number(obj["opt"]);
-        console.log("Server:" + str);
+
+
         //发送回调
+        //稳定回调，百分之百对应接口
         let tuple = this.events.get(opt);
         if (tuple) {
             let func: Function = tuple[0];
             let caller = tuple[1];
             func.call(caller, obj);
         }
+        //外部回调，外面用on注册
+        this.emit(opt + "", obj);
     }
 
     /************************************************
@@ -93,6 +101,8 @@ export default class ClientNetworkSystem extends NetworkSystem {
         this.userManager.init(this);
         this.roomManager = new ClientRoomManager();
         this.roomManager.init(this);
+        this.register(NetCmd.HEART, this.onHeart, this);
+
     }
 
     /************************************************
@@ -101,7 +111,7 @@ export default class ClientNetworkSystem extends NetworkSystem {
      ************************************************/
 
     //连接
-    protected connect(data: any = null) {
+    public connect(data: any = null) {
         console.log("正在连接", this.url)
         this.conState = ConnectionStatus.CONNECTING;
 
@@ -127,7 +137,7 @@ export default class ClientNetworkSystem extends NetworkSystem {
         this.userManager.onConnected();
 
         //开启心跳
-        // this.startHeart();
+        this.startHeart();
         this.endReConnect();
     }
 
@@ -174,8 +184,10 @@ export default class ClientNetworkSystem extends NetworkSystem {
     //心跳包
     protected heartFlag: boolean = false;
     protected heartHandle: number = -1;
-    protected heartDelay: number = 5000;
+    protected heartDelay: number = 10 * 1000;
+
     protected sendTime: number = 0;
+    protected receiveTime: number = 0;
 
     protected startHeart() {
         if (!this.heartFlag) {
@@ -192,21 +204,27 @@ export default class ClientNetworkSystem extends NetworkSystem {
             clearTimeout(this.heartHandle);
         }
     }
-    public getCurrentTime() {
-        return new Date().getTime();
-    }
+
+    //客户端发送
+    //服务器接收
+    //客户端接收
+
+    //客户端发送时刻 接收时刻
+    //服务器 计算三者延迟，接收时刻
     protected sendHeart() {
-        this.sendTime = this.getCurrentTime();
-        this.sendCmd(NetCmd.HEART, {});
-    }
-    protected onHeart() {
-        //TODO 计算延迟
-        let curTime = this.getCurrentTime();
+        this.sendTime = this.getCurrentTime();//发送时刻
+        this.sendCmd(NetCmd.HEART, {
+            data: [this.sendTime, this.receiveTime]
+        });
 
-        this.delay = curTime - this.sendTime;
-        console.log("延迟", this.delay)
     }
 
+    protected onHeart(obj: object) {
+        this.receiveTime = this.getCurrentTime();//接收时刻
+    }
 
 
+    public getServerInfo() {
+        this.sendCmd(NetCmd.DEV_SERVER_STATUS);
+    }
 }

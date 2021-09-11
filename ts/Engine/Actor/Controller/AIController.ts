@@ -1,5 +1,5 @@
 
-import { UInput } from "../../Engine/InputSystem/Input";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
 import { xclass } from "../../Engine/ReflectSystem/XBase";
 import UGraphic from "../../Engine/UGraphic";
 import UWorld from "../../Engine/World";
@@ -16,7 +16,7 @@ export default class AAIController extends AController{
 
     }
 
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
 
     }
 

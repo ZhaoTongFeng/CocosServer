@@ -25,6 +25,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var XBase_1 = require("../../Engine/ReflectSystem/XBase");
+var UMath_1 = require("../../Engine/UMath");
 var SceneComponent_1 = __importDefault(require("./SceneComponent"));
 /**
  * 精灵图片组件
@@ -58,9 +59,41 @@ var UCameraComponent = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
-    //1.
-    UCameraComponent.prototype.init = function (data) {
-        _super.prototype.init.call(this, data);
+    UCameraComponent.prototype.getPosition = function () {
+        if (this.isRoot()) {
+            return _super.prototype.getPosition.call(this);
+        }
+        else {
+            return this.owner.getPosition();
+        }
+    };
+    UCameraComponent.prototype.onComputeTransfor = function () {
+        if (this.owner.world.isClient) {
+            this.computeCatAABB();
+        }
+    };
+    UCameraComponent.prototype.computeCatAABB = function () {
+        //更新相机剔除AABB
+        var pos = this.getPosition();
+        var size = this.owner.world.gameInstance.getWorldView().winSize;
+        // this.catAABB.min.x = pos.x - size.x
+        // this.catAABB.min.y = pos.y - size.y
+        // this.catAABB.max.x = pos.x + size.x
+        // this.catAABB.max.y = pos.x + size.x
+        this.catAABB.min.x = pos.x - size.x / 2;
+        this.catAABB.min.y = pos.y - size.y / 2;
+        this.catAABB.max.x = pos.x + size.x / 2;
+        this.catAABB.max.y = pos.y + size.y / 2;
+    };
+    UCameraComponent.prototype.update = function (dt) {
+    };
+    UCameraComponent.prototype.drawDebug = function (graphic) {
+        var size = this.owner.world.gameInstance.getWorldView().winSize;
+        // let width = size.x*2;
+        // let height = size.y*2;
+        var width = size.x;
+        var height = size.y;
+        graphic.drawRect(this.catAABB.min.x, this.catAABB.min.y, width, height, UMath_1.UColor.YELLOW());
     };
     UCameraComponent.prototype.register = function () {
         this.owner.world.gameInstance.getWorldView().addCameraComponent(this);
@@ -79,12 +112,6 @@ var UCameraComponent = /** @class */ (function (_super) {
         _super.prototype.destory.call(this);
     };
     var UCameraComponent_1;
-    __decorate([
-        XBase_1.xproperty(Number)
-    ], UCameraComponent.prototype, "_zoomRatio", void 0);
-    __decorate([
-        XBase_1.xproperty(Number)
-    ], UCameraComponent.prototype, "_orthoSize", void 0);
     UCameraComponent = UCameraComponent_1 = __decorate([
         XBase_1.xclass(UCameraComponent_1)
     ], UCameraComponent);

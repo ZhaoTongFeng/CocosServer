@@ -1,27 +1,17 @@
-import { xclass, XBase, xproperty } from "../../ReflectSystem/XBase";
+import { xclass, XBase, xproperty, xServer } from "../../ReflectSystem/XBase";
 import User from "../Share/User";
-import UserManager from "./ServerUserManager";
+import ServerNetworkSystem from "./ServerNetworkSystem";
 
-export enum ConnectionStatus {
-    CONNECTING, //连接中
-    CONNECTED,  //已连接
-    LOSE,       //断线
-}
-
+@xServer("User")
 @xclass(ServerUser)
 export default class ServerUser extends User {
     //socket 连接
     public conn = null;
-    //连接状态
-    @xproperty(Number)
-    public conState: ConnectionStatus = ConnectionStatus.CONNECTING;
-    
+
+
     public sendCmd(cmd: number, obj: Object | string) {
-        this.mng.ns.sendCmd(this.conn, cmd, obj);
-    }
-
-    public onClose() {
-
+        let ns = this.mng.ns as ServerNetworkSystem;
+        ns.sendCmd(this.conn, cmd, obj);
     }
 }
 

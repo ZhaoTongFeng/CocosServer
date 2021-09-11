@@ -188,7 +188,7 @@ export default class UCollisionSystem extends UObject {
         )
         console.warn(
             "ac pool", this.world.actorPool,
-            "cp pool", this.world.componentPoos,
+            "cp pool", this.world.compPool,
         )
     }
 }

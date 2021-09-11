@@ -1,7 +1,9 @@
+import { GameState } from "../../Enums";
 import UGameInstance from "../../GameInstance";
 import { xclass, XBase, xproperty } from "../../ReflectSystem/XBase";
-import GameSync from "./GameSync";
+import { NetCmd } from "./NetCmd";
 import RoomManager from "./RoomManager";
+import Game from "./Sync/Game";
 import User from "./User";
 
 
@@ -12,17 +14,92 @@ export default class Room extends XBase {
     public id: string = "";
 
     //用户列表
-    @xproperty(Map)
-    public users: Map<string, User> = new Map();
+    @xproperty(Set)
+    public users: Set<string> = new Set();
 
     //房主
+    @xproperty(String)
     public owner: string = null;
 
-    public roomManager: RoomManager = null;
+    //倒计时
+    @xproperty(Number)
+    time = 0;
 
-    public gameSync: GameSync = null;
+    handle: number = -1;
+
+
+    public mng: RoomManager = null;
+
+    public game: Game = null;
 
     public gameInstance: UGameInstance = null;
+
+    //更新句柄
+    handle_game: number = -1;
+    fps: number = 60;
+    clientFps = 60;
+    serverFps = 15;
+    frameTime: number = 0;
+    frameTimer: number = 0;
+
+    time_cur: number = 0;
+    time_last: number = 0;
+
+    /**
+     * 开始更新游戏
+     * 客户端晚于服务端开始游戏
+     */
+    startUpdateGame() {
+        if (this.gameInstance.getIsClient()) {
+            this.fps = this.clientFps;
+        } else {
+            this.fps = this.serverFps;
+        }
+
+        let world = this.gameInstance.getWorld();
+        world.gameState = GameState.Playing;
+
+        this.frameTime = 1 / this.fps;
+        this.time_cur = this.mng.ns.getCurrentTime();
+        this.time_last = this.mng.ns.getCurrentTime();
+
+        this.handle_game = setInterval(() => {
+            this.time_cur = new Date().getTime();
+            let offset = this.time_cur - this.time_last
+
+            if (offset > this.frameTime * 1000) {
+                let dt = offset / 1000;
+                this.time_last = this.time_cur;
+                this.updateGame(dt);
+            }
+            // console.log(offset);
+
+        }, 16);
+    }
+
+
+    sendGameData(...args) { };
+
+
+    updateGame(dt) {
+        this.gameInstance.update(dt);
+    }
+
+    endUpdateGame() {
+        clearInterval(this.handle_game);
+    }
+
+
+    getAllUsers() {
+        let users = [];
+        this.users.forEach(id => {
+            let user = this.mng.getUserById(id)
+            users.push(user);
+        });
+        return users;
+    }
+
+    initGameInstance() { }
 
     getUserCount(): number { return this.users.size; }
 
@@ -41,5 +118,5 @@ export default class Room extends XBase {
 
     //转发同步数据到GameInstance
     public onSyncGame(...args) { }
-
+    onBeginGame(...args) { }
 }

@@ -35,15 +35,22 @@ var UActorSystem = /** @class */ (function (_super) {
     __extends(UActorSystem, _super);
     function UActorSystem() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        //组件和actor对象映射，主要用在状态更新
+        _this.objMap = new Map();
         _this.sceneComponents = [];
         _this.spriteComponents = [];
         _this.world = null;
         return _this;
     }
     UActorSystem_1 = UActorSystem;
+    UActorSystem.prototype.registerObj = function (obj) {
+        this.objMap.set(obj.id, obj);
+    };
+    UActorSystem.prototype.unRegisterObj = function (obj) {
+        this.objMap.delete(obj.id);
+    };
     UActorSystem.prototype.registerSceneComponent = function (scene) {
         this.sceneComponents.push(scene);
-        this.world.gameInstance.getWorldView().addSceneComponent(scene);
     };
     UActorSystem.prototype.unRegisterSceneComponent = function (scene) {
         var index = this.sceneComponents.findIndex(function (one) {
@@ -51,12 +58,11 @@ var UActorSystem = /** @class */ (function (_super) {
         });
         if (index > -1) {
             this.sceneComponents.splice(index, 1);
+            // this.world.gameInstance.getWorldView().removeSceneComponent(scene);
         }
-        this.world.gameInstance.getWorldView().removeSceneComponent(scene);
     };
     UActorSystem.prototype.registerSprite = function (scene) {
         this.spriteComponents.push(scene);
-        this.world.gameInstance.getWorldView().addSpriteComponent(scene);
     };
     UActorSystem.prototype.unRegisterSprite = function (scene) {
         var index = this.spriteComponents.findIndex(function (one) {
@@ -64,8 +70,16 @@ var UActorSystem = /** @class */ (function (_super) {
         });
         if (index > -1) {
             this.spriteComponents.splice(index, 1);
-            this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
+            // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
         }
+    };
+    UActorSystem.prototype.registerAll = function () {
+        this.sceneComponents.forEach(function (comp) {
+            // this.world.gameInstance.getWorldView().addSceneComponent(comp);
+        });
+        this.spriteComponents.forEach(function (comp) {
+            // this.world.gameInstance.getWorldView().addSpriteComponent(comp);
+        });
     };
     UActorSystem.prototype.init = function (world) {
         _super.prototype.init.call(this, world);

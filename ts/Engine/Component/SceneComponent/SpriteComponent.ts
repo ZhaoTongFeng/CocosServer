@@ -12,6 +12,7 @@ import USceneComponent from "./SceneComponent";
 @xclass(USpriteComponent)
 export default class USpriteComponent extends USceneComponent {
 
+    @xproperty(String)
     private textureName: string = "";
     private needUpdateTexture: boolean = true;
 
@@ -45,11 +46,6 @@ export default class USpriteComponent extends USceneComponent {
         this.owner.world.actorSystem.unRegisterSprite(this);
     }
 
-    //1.
-    public init(data: any) {
-        super.init(data);
-
-    }
 
     private markTextureDirty() {
         this.needUpdateTexture = true;

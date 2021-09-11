@@ -1,8 +1,8 @@
 import UCollisionComponent from "../../Component/Collision/CollisionComponent";
 import UMovementComponent from "../../Component/Movement/MovementComponent";
 import USceneComponent from "../../Component/SceneComponent/SceneComponent";
-import { UInput } from "../../Engine/InputSystem/Input";
-import { xclass } from "../../Engine/ReflectSystem/XBase";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
+import { xclass, xproperty } from "../../Engine/ReflectSystem/XBase";
 import UWorld from "../../Engine/World";
 import AActor from "../Actor";
 import AAIController from "../Controller/AIController";
@@ -14,8 +14,10 @@ import AController from "../Controller/Controller";
  */
 @xclass(APawn)
 export default class APawn extends AActor {
+    @xproperty(AController,{})
     public controller: AController = null;
 
+    @xproperty(UMovementComponent,{})
     protected movementComponent: UMovementComponent = null;
 
     unUse() {
@@ -38,13 +40,9 @@ export default class APawn extends AActor {
     }
 
 
-    //创建
-    init(world: UWorld) {
-        super.init(world);
-    }
 
     //输入
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
 
     }
 
@@ -69,3 +67,4 @@ export default class APawn extends AActor {
         super.onDestory();
     }
 }
+

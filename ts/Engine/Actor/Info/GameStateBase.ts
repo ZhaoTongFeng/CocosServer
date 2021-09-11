@@ -1,5 +1,5 @@
 import AInfo from "./Info";
-import { UInput } from "../../Engine/InputSystem/Input";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
 import UWorld from "../../Engine/World";
 import AActor from "../Actor";
 import { xclass } from "../../Engine/ReflectSystem/XBase";
@@ -15,7 +15,7 @@ export default class AGameStateBase extends AInfo {
 
     }
 
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
 
     }
 

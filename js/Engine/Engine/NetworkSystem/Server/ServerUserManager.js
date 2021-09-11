@@ -26,9 +26,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var XBase_1 = require("../../ReflectSystem/XBase");
 var NetCmd_1 = require("../Share/NetCmd");
+var User_1 = require("../Share/User");
 var UserManager_1 = __importDefault(require("../Share/UserManager"));
-var ServerUser_1 = require("./ServerUser");
-var ServerUser_2 = __importDefault(require("./ServerUser"));
+var ServerUser_1 = __importDefault(require("./ServerUser"));
 var ServerUserManager = /** @class */ (function (_super) {
     __extends(ServerUserManager, _super);
     function ServerUserManager() {
@@ -40,8 +40,37 @@ var ServerUserManager = /** @class */ (function (_super) {
         return _this;
     }
     ServerUserManager_1 = ServerUserManager;
+    ServerUserManager.prototype.spawnNewUser = function (id_user) {
+        var user = new ServerUser_1.default();
+        user.mng = this;
+        user.id_user = id_user;
+        return user;
+    };
     ServerUserManager.prototype.getUserByKey = function (key) {
         return this.userKeyMap.get(key);
+    };
+    ServerUserManager.prototype.onGetList = function (key, conn, obj) {
+        var user = this.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj);
+            return;
+        }
+        var out = {
+            data: this.toJSON()
+        };
+        // let arr = [];
+        // this.rooms.forEach(room => {
+        //     let ids = [];
+        //     room.users.forEach((user, id) => {
+        //         ids.push(id);
+        //     });
+        //     arr.push({
+        //         id: room.id,
+        //         size: room.users.size,
+        //         ids: ids
+        //     });
+        // });
+        user.sendCmd(NetCmd_1.NetCmd.USER_LIST, out);
     };
     //0.注册回调
     ServerUserManager.prototype.init = function (ns) {
@@ -77,8 +106,7 @@ var ServerUserManager = /** @class */ (function (_super) {
         else {
             user = this.userIdMap.get(id_user);
             if (!user) {
-                user = new ServerUser_2.default();
-                user.id_user = id_user;
+                user = this.spawnNewUser(id_user);
                 console.log("用户首次登录", user.id_user);
             }
             else {
@@ -87,7 +115,7 @@ var ServerUserManager = /** @class */ (function (_super) {
         }
         user.key_conn = key;
         user.conn = conn;
-        user.conState = ServerUser_1.ConnectionStatus.CONNECTED;
+        user.conState = User_1.ConnectionStatus.CONNECTED;
         //添加到Map
         this.userIdMap.set(id_user + "", user);
         this.userKeyMap.set(key, user);
@@ -110,7 +138,7 @@ var ServerUserManager = /** @class */ (function (_super) {
         var user = this.userKeyMap.get(key);
         //断开连接时，用户不一定已经登录
         if (user) {
-            user.conState = ServerUser_1.ConnectionStatus.LOSE;
+            user.conState = User_1.ConnectionStatus.LOSE;
             //不从idMap中清除，只清除连接
             // this.userIdMap.delete(user.id_user);
             this.userKeyMap.delete(user.key_conn);
@@ -127,7 +155,8 @@ var ServerUserManager = /** @class */ (function (_super) {
         XBase_1.xproperty(Map)
     ], ServerUserManager.prototype, "userLoseMap", void 0);
     ServerUserManager = ServerUserManager_1 = __decorate([
-        XBase_1.xclass(ServerUserManager_1)
+        XBase_1.xclass(ServerUserManager_1),
+        XBase_1.xStatusSync(["userKeyMap", "userLoseMap"])
     ], ServerUserManager);
     return ServerUserManager;
 }(UserManager_1.default));

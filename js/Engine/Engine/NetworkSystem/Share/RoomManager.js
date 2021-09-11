@@ -62,7 +62,15 @@ var RoomManager = /** @class */ (function (_super) {
         ns.register(NetCmd_1.NetCmd.ROOM_EXIT, this.onExit, this);
         ns.register(NetCmd_1.NetCmd.ROOM_DEL, this.onDel, this);
         ns.register(NetCmd_1.NetCmd.ROOM_LIST, this.onGetList, this);
-        ns.register(NetCmd_1.NetCmd.SYNC_GAME, this.onSyncGame, this);
+        ns.register(NetCmd_1.NetCmd.GAME_BEGIN, this.onGameBeg, this);
+        ns.register(NetCmd_1.NetCmd.GAME_READY, this.onGameReady, this);
+        ns.register(NetCmd_1.NetCmd.GAME_LOADLEVEL, this.onLoadLevelData, this);
+        ns.register(NetCmd_1.NetCmd.GAME_ALREADYLOADLEVEL, this.onAlreadyLoadLevel, this);
+        ns.register(NetCmd_1.NetCmd.GAME_PLAY, this.onGamePlay, this);
+        ns.register(NetCmd_1.NetCmd.GAME_SEND_SERVER, this.onReceiveGameData, this);
+        ns.register(NetCmd_1.NetCmd.GAME_FINISH, this.onSendGameFinish, this);
+        ns.register(NetCmd_1.NetCmd.GAME_RESULT, this.onSendGameResult, this);
+        ns.register(NetCmd_1.NetCmd.GAME_END, this.onSendGameEnd, this);
     };
     //获取房间列表
     RoomManager.prototype.getList = function () {
@@ -105,6 +113,60 @@ var RoomManager = /** @class */ (function (_super) {
             args[_i] = arguments[_i];
         }
     };
+    RoomManager.prototype.onGameBeg = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onGameReady = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onLoadLevelData = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onAlreadyLoadLevel = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onGamePlay = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onReceiveGameData = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onSendGameFinish = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onSendGameResult = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onSendGameEnd = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
     RoomManager.prototype.onSyncGame = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -116,7 +178,8 @@ var RoomManager = /** @class */ (function (_super) {
         XBase_1.xproperty(Map)
     ], RoomManager.prototype, "rooms", void 0);
     RoomManager = RoomManager_1 = __decorate([
-        XBase_1.xclass(RoomManager_1)
+        XBase_1.xclass(RoomManager_1),
+        XBase_1.xStatusSync(["rooms"])
     ], RoomManager);
     return RoomManager;
 }(Manager_1.default));

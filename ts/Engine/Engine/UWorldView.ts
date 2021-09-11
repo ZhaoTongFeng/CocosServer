@@ -4,9 +4,11 @@ import USceneComponent from "../Component/SceneComponent/SceneComponent";
 import USpriteComponent from "../Component/SceneComponent/SpriteComponent";
 import { Visiblity } from "./Enums";
 import UGameInstance from "./GameInstance";
+import ClientNetworkSystem from "./NetworkSystem/Client/ClientNetworkSystem";
+import ClientRoomManager from "./NetworkSystem/Client/ClientRoomManager";
 import { XBase, xclass } from "./ReflectSystem/XBase";
 import UGraphic from "./UGraphic";
-import { UMath, UVec2 } from "./UMath";
+import { UMath, uu, UVec2 } from "./UMath";
 import UWorld from "./World";
 
 
@@ -25,26 +27,33 @@ export default class UWorldView extends XBase {
     graphic: UGraphic = new UGraphic();
 
     //屏幕大小
-    winSize: UVec2;
+    winSize: UVec2 = uu.v2(2000, 2000);
 
-    gameInstance: UGameInstance = null;
+    //默认从当前房间拿游戏实例
+    private _gameInstance: UGameInstance = null;
+    public get gameInstance(): UGameInstance {
+        return (ClientNetworkSystem.Ins.roomManager as ClientRoomManager).getLocRoom().gameInstance;
+    }
+
+    public set gameInstance(value: UGameInstance) {
+        // this._gameInstance = value;
+    }
+
+
 
     //退出和进入此场景操作
     //SEVER 服务器直接从这里开始 
     public onEnter(world: UWorld, data = null) {
         this.gameInstance.openWorld(world, data, this);
+        return world;
     }
 
     public onExit() {
         this.gameInstance.closeWorld();
     }
 
-    //Client的逻辑更新入口
-    public update(dt) {
-        if (this.gameInstance) {
-            this.gameInstance.update(dt);
-        }
-    }
+    updateOnec(dt = 0) {}
+
 
     addSceneComponent(comp: USceneComponent) { }
     removeSceneComponent(comp: USceneComponent) { }

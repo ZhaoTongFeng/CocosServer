@@ -26,6 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Manager_1 = __importDefault(require("./Manager"));
 var XBase_1 = require("../../ReflectSystem/XBase");
+var NetCmd_1 = require("./NetCmd");
 var UserManager = /** @class */ (function (_super) {
     __extends(UserManager, _super);
     function UserManager() {
@@ -38,7 +39,17 @@ var UserManager = /** @class */ (function (_super) {
     UserManager.prototype.getUserById = function (id) {
         return this.userIdMap.get(id);
     };
+    UserManager.prototype.init = function (ns) {
+        _super.prototype.init.call(this, ns);
+        ns.register(NetCmd_1.NetCmd.USER_LIST, this.onGetList, this);
+    };
     UserManager.prototype.add = function (id_user) { };
+    UserManager.prototype.onGetList = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
     //获取用户
     UserManager.prototype.select = function (id) { };
     UserManager.prototype.insert = function (user) { };
@@ -51,8 +62,12 @@ var UserManager = /** @class */ (function (_super) {
         }
     };
     var UserManager_1;
+    __decorate([
+        XBase_1.xproperty(Map)
+    ], UserManager.prototype, "userIdMap", void 0);
     UserManager = UserManager_1 = __decorate([
-        XBase_1.xclass(UserManager_1)
+        XBase_1.xclass(UserManager_1),
+        XBase_1.xStatusSync(["userIdMap"])
     ], UserManager);
     return UserManager;
 }(Manager_1.default));

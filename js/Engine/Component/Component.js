@@ -49,17 +49,27 @@ var UComponent = /** @class */ (function (_super) {
         this.state = Enums_1.UpdateState.Active;
         this.owner = null;
     };
-    UComponent.prototype.init = function (obj) {
-        _super.prototype.init.call(this, obj);
-        if (!obj) {
+    UComponent.prototype.init = function (ac, id) {
+        if (id === void 0) { id = -1; }
+        _super.prototype.init.call(this, ac);
+        if (!ac) {
             console.warn("actor can't be null");
             return;
         }
-        this.owner = obj;
+        this.owner = ac;
+        this.owner.addComponent(this);
+        if (id == -1) {
+            id = Number(this.owner.world.GenerateNewId());
+        }
+        this.id = id + "";
+        this.onLoad(ac);
+    };
+    UComponent.prototype.onLoad = function (ac) {
+        this.owner = ac;
         if (this.owner.getRootComp() == null) {
             this.owner.setRootComp(this);
         }
-        this.owner.addComponent(this);
+        this.owner.world.actorSystem.registerObj(this);
     };
     UComponent.prototype.processInput = function (input) {
     };
@@ -88,9 +98,6 @@ var UComponent = /** @class */ (function (_super) {
     UComponent.prototype.onComputeTransfor = function () {
     };
     var UComponent_1;
-    __decorate([
-        XBase_1.xproperty(Number)
-    ], UComponent.prototype, "state", void 0);
     UComponent = UComponent_1 = __decorate([
         XBase_1.xclass(UComponent_1)
     ], UComponent);

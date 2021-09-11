@@ -41,7 +41,7 @@ var ClientRoomManager = /** @class */ (function (_super) {
     __extends(ClientRoomManager, _super);
     function ClientRoomManager() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.curRoom = null;
+        _this.id_loc = null;
         //请求服务器创建一个房间
         _this.optLock = false;
         return _this;
@@ -52,7 +52,7 @@ var ClientRoomManager = /** @class */ (function (_super) {
         var room = new ClientRoom_1.default();
         room.id = id_room;
         this.rooms.set(id_room, room);
-        room.roomManager = this;
+        room.mng = this;
         return room;
     };
     //0.注册回调
@@ -61,11 +61,7 @@ var ClientRoomManager = /** @class */ (function (_super) {
     };
     //获取房间列表
     ClientRoomManager.prototype.getList = function () {
-        var out = {};
-        this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_LIST, out);
-    };
-    ClientRoomManager.prototype.onGetList = function (obj) {
-        console.log(obj);
+        this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_LIST);
     };
     ClientRoomManager.prototype.isCanOpt = function () {
         if (this.optLock) {
@@ -83,7 +79,7 @@ var ClientRoomManager = /** @class */ (function (_super) {
         this.optLock = false;
     };
     ClientRoomManager.prototype.create = function () {
-        if (this.curRoom != null) {
+        if (this.id_loc != null) {
             console.warn("目前已经在有一个房间");
             return;
         }
@@ -97,37 +93,38 @@ var ClientRoomManager = /** @class */ (function (_super) {
     //服务器把房间创建好
     ClientRoomManager.prototype.onCreate = function (obj) {
         this.unLock();
-        var code = obj["code"];
-        if (code != 0) {
-            console.warn("Client:房间创建失败", code);
-            return;
-        }
-        var id_room = obj["id_room"];
-        var room = this.add(id_room);
-        this.curRoom = room;
-        var userMng = this.ns.userManager;
-        room.onAdd(userMng.locUser);
-        console.log("Client:房间创建成功", room);
+        // let code = obj["code"];
+        // if (code != 0) {
+        //     console.warn("Client:房间创建失败", code);
+        //     return;
+        // }
+        // let id_room = obj["id_room"];
+        // let room = this.add(id_room);
+        // this.id_loc = id_room;
+        // let userMng = this.ns.userManager as ClientUserManager;
+        // let locUser = userMng.getUserById(userMng.id_loc);
+        // if(locUser){
+        //     room.onAdd(locUser);
+        // }
+        // console.log("Client:房间创建成功", room);
     };
     //请求加入一个房间
     ClientRoomManager.prototype.join = function (id_room) {
         if (this.isCanOpt()) {
             this.lockOpt();
-            if (!this.curRoom) {
-                var out = {
-                    id_room: id_room
-                };
-                this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_JOIN, out);
-                console.log("Client:请求加入房间", id_room);
-            }
-            else {
-                console.log("当前房间不为空");
-            }
+            var out = {
+                id_room: id_room
+            };
+            this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_JOIN, out);
+            console.log("Client:请求加入房间", id_room);
+            // if (!this.id_loc) {
+            // } else {
+            //     console.log("当前房间不为空");
+            // }
         }
     };
     //当有人加入房间(不止是自己)
     ClientRoomManager.prototype.onJoin = function (obj) {
-        var _this = this;
         this.unLock();
         var code = obj["code"];
         if (code != 0) {
@@ -139,39 +136,40 @@ var ClientRoomManager = /** @class */ (function (_super) {
         var userMng = this.ns.userManager;
         var ns = this.ns;
         if (ns.isThisUser(id_user)) {
-            //加入者检查是否需要实例化这个房间
-            var room = this.getRoomById(id_room);
-            if (!room) {
-                room = this.add(id_room);
-            }
-            this.curRoom = room;
-            //并获取这个房间的最新状态，这里直接返回了，所以不需要额外去获取，但理论上，应该分开
-            var ids = obj["ids"];
-            ids.forEach(function (id) {
-                var user = _this.getUserById(id);
-                if (!user) {
-                    user = userMng.add(id_user);
-                }
-            });
-            console.log("Client:加入房间成功", this.curRoom);
+            this.id_loc = id_room;
+            // //加入者检查是否需要实例化这个房间
+            // let room = this.getRoomById(id_room);
+            // if (!room) {
+            //     room = this.add(id_room);
+            // }
+            // this.id_loc = room;
+            // //并获取这个房间的最新状态，这里直接返回了，所以不需要额外去获取，但理论上，应该分开
+            // let ids = obj["ids"];
+            // ids.forEach(id => {
+            //     let user = this.getUserById(id);
+            //     if (!user) {
+            //         user = userMng.add(id_user);
+            //     }
+            // });
+            console.log("Client:加入房间成功", this.id_loc);
         }
         else {
-            //房间其他人,只需添加这一个用户
-            var user = this.getUserById(id_user);
-            if (!user) {
-                user = userMng.add(id_user);
-            }
-            this.curRoom.onJoin(user);
-            console.log("Client:XXX加入房间", this.curRoom);
+            // //房间其他人,只需添加这一个用户
+            // let user = this.getUserById(id_user)
+            // if (!user) {
+            //     user = userMng.add(id_user);
+            // }
+            // this.id_loc.onJoin(user);
+            console.log("Client:XXX加入房间", this.id_loc);
         }
     };
     //退出这个房间
     ClientRoomManager.prototype.exit = function () {
         if (this.isCanOpt()) {
             this.lockOpt();
-            if (this.curRoom) {
+            if (this.id_loc) {
                 var out = {
-                    id_room: this.curRoom.id
+                    id_room: this.id_loc
                 };
                 this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_EXIT, out);
             }
@@ -198,7 +196,7 @@ var ClientRoomManager = /** @class */ (function (_super) {
         var ns = this.ns;
         if (ns.isThisUser(id_user)) {
             //如果是退出者
-            this.curRoom = null;
+            this.id_loc = null;
             console.log("Client:退出成功", this.rooms);
         }
         else {
@@ -214,9 +212,9 @@ var ClientRoomManager = /** @class */ (function (_super) {
     ClientRoomManager.prototype.del = function () {
         if (this.isCanOpt()) {
             this.lockOpt();
-            if (this.curRoom) {
+            if (this.id_loc) {
                 var out = {
-                    id_room: this.curRoom.id
+                    id_room: this.id_loc
                 };
                 this.ns.sendCmd(NetCmd_1.NetCmd.ROOM_DEL, out);
             }
@@ -231,17 +229,74 @@ var ClientRoomManager = /** @class */ (function (_super) {
         room.onDel(null);
         this.delete(room);
     };
+    ClientRoomManager.prototype.sendGameBeg = function () {
+        var room = this.getRoomById(this.id_loc);
+        room.sendGameBeg();
+    };
+    ClientRoomManager.prototype.getLocRoom = function () {
+        return this.getRoomById(this.id_loc);
+    };
+    /**
+     * 准备阶段
+     */
+    //1.3进入游戏关卡
+    ClientRoomManager.prototype.onGameBeg = function (obj) {
+        var room = this.getLocRoom();
+        room.onGameBeg(obj);
+    };
+    //2.3服务器成功收到我已经准备好了
+    ClientRoomManager.prototype.onGameReady = function (obj) {
+        var room = this.getLocRoom();
+        room.onGameReady(obj);
+    };
+    //3.2客户端接收关卡数据完成
+    ClientRoomManager.prototype.onLoadLevelData = function (obj) {
+        var room = this.getLocRoom();
+        room.onLoadLevelData(obj);
+    };
+    //4.2开始游戏
+    ClientRoomManager.prototype.onGamePlay = function (obj) {
+        var room = this.getLocRoom();
+        room.onGamePlay(obj);
+    };
+    /**
+     * 同步阶段
+     */
+    //6.2接收服务器的状态，更新本地状态
+    ClientRoomManager.prototype.onReceiveGameData = function (obj) {
+        var room = this.getLocRoom();
+        room.onReceiveGameData(obj);
+    };
+    /**
+     * 结算阶段
+     */
+    //7.2服务器通知游戏结束
+    ClientRoomManager.prototype.onGameFinish = function (obj) {
+        var room = this.getLocRoom();
+        room.onGameFinish(obj);
+    };
+    //8.2服务器通知游戏结果
+    ClientRoomManager.prototype.onGameResult = function (obj) {
+        var room = this.getLocRoom();
+        room.onGameResult(obj);
+    };
+    //9.2服务器通知游戏彻底结束
+    ClientRoomManager.prototype.onGameEnd = function (obj) {
+        var room = this.getLocRoom();
+        room.onGameEnd(obj);
+    };
     //客户端一个只有一个游戏实例，所以可以直接在Manager中进行处理
     //但是服务器，必须在房间中进行处理
     ClientRoomManager.prototype.syncGame = function (obj) {
         var out = {
             data: obj
         };
-        this.ns.sendCmd(NetCmd_1.NetCmd.SYNC_GAME, out);
+        this.ns.sendCmd(NetCmd_1.NetCmd.GAME_SEND_SERVER, out);
         // console.log("发送全部消息", out);
     };
     ClientRoomManager.prototype.onSyncGame = function (obj) {
-        this.curRoom.onSyncGame(obj, this.gameInstance);
+        var room = this.getRoomById(this.id_loc);
+        room.onSyncGame(obj, this.gameInstance);
     };
     var ClientRoomManager_1;
     ClientRoomManager = ClientRoomManager_1 = __decorate([

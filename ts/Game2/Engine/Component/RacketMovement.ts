@@ -4,7 +4,7 @@ import { uu, UVec2 } from "../../../Engine/Engine/UMath";
 
 
 @xclass(RacketMovement)
-@xStatusSync(RacketMovement,["targetPos"])
+@xStatusSync(["targetPos"])
 export default class RacketMovement extends UMovementComponent {
     @xproperty(UVec2)
     targetPos: UVec2 = uu.v2();

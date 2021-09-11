@@ -25,8 +25,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var Object_1 = __importDefault(require("../Object"));
-var Input_1 = require("./InputSystem/Input");
+var Enums_1 = require("./Enums");
+var InputSystem_1 = require("./InputSystem/InputSystem");
 var XBase_1 = require("./ReflectSystem/XBase");
+var UMath_1 = require("./UMath");
 /**
  * 游戏实例 管理整个游戏生命周期
  * Client And Server 客户端和服务端都需要启动这个类
@@ -36,9 +38,27 @@ var UGameInstance = /** @class */ (function (_super) {
     __extends(UGameInstance, _super);
     function UGameInstance() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        /**
+         * 服务端客户端标识
+         * 在编写游戏逻辑时，可以选择将逻辑放到客户端或者服务端
+         */
+        _this._isClient = false;
+        _this.room = null;
+        _this.sendBuffer = [];
+        _this.receiveBuffer = [];
+        /** 接收方，根据是服务器还是客户端，分别进行处理，如果是服务端则收到的是输入，客户端收到的是输出 */
+        _this.oldTick = 0;
+        _this.curTick = 0;
+        _this.timeFrame = 0;
+        //内插值计时器
+        _this.frameTimer = 0;
+        _this.frameRate = 0;
+        //当前关卡 网络处理+逻辑处理+本地输入循环
+        _this.debugTimer = 0;
+        _this.debugDelay = 5;
         /** 共享系统 */
         //本地输入系统
-        _this.input = new Input_1.UInput();
+        _this.input = new InputSystem_1.UInputSystem();
         //音频系统
         _this.audio = null;
         //关卡系统
@@ -46,15 +66,6 @@ var UGameInstance = /** @class */ (function (_super) {
         /** 游戏同步系统 */
         /** 网络数据系统 */
         _this.network = null;
-        /**
-         * 服务端客户端标识
-         * 在编写游戏逻辑时，可以选择将逻辑放到客户端或者服务端
-         */
-        _this._isClient = false;
-        _this.sendBuffer = [];
-        _this.receiveBuffer = [];
-        _this.receiveBufferTemp = []; //防止在处理数据时，接收新数据
-        _this.receiveFlag = false;
         //当前游戏世界指针
         _this.view = null;
         _this.world = null;
@@ -62,64 +73,96 @@ var UGameInstance = /** @class */ (function (_super) {
         _this.deltaTime = 0;
         //从游戏实例启动 到现在的时间 
         _this.passTime = 0;
-        _this.fps = 60;
-        _this.frameTime = 0;
-        _this.frameTimer = 0;
         return _this;
     }
     UGameInstance_1 = UGameInstance;
     UGameInstance.prototype.getIsClient = function () { return this._isClient; };
     UGameInstance.prototype.setIsClient = function (val) { this._isClient = val; };
-    //每一帧调用这个去发送，但不是立即发送，这结束之后才会被全部发送
-    UGameInstance.prototype.sendGameData = function (obj) {
-        this.sendBuffer.push(obj);
+    /** 发送方只管发 */
+    //先将发送数据存到缓存
+    UGameInstance.prototype.sendGameData = function (obj, target) {
+        var out = {
+            id: target.id,
+            data: obj
+        };
+        this.sendBuffer.push(out);
     };
-    //只负责接受数据，至于数据怎么处理，由关卡里面去实现
-    UGameInstance.prototype.receiveGameData = function (obj) {
-        if (this.receiveFlag) {
-            //如果正在处理数据，则添加到临时容器
-            this.receiveBufferTemp.push(obj);
-        }
-        else {
-            this.receiveBuffer.push(obj);
-        }
-    };
-    //全部发送，并清空
+    //通过ROOM，全部发送，并清空
     UGameInstance.prototype.sendAllGameData = function () {
         if (this.sendBuffer.length != 0) {
-            this.network.sendAllGameInput(this.sendBuffer);
+            this.room.sendGameData(this.sendBuffer);
             this.sendBuffer = [];
         }
     };
-    //处理所有网络输入
-    UGameInstance.prototype.startProcessSyncData = function () {
-        var _this = this;
-        this.receiveFlag = true;
-        //上一帧的多个数据包
-        this.receiveBuffer.forEach(function (buffer) {
-            _this.world.inputSystem.processNetInput(buffer);
-        });
+    //只负责接受数据，至于数据怎么处理，由关卡里面去实现
+    UGameInstance.prototype.receiveGameData = function (obj, time) {
+        this.receiveBuffer = obj;
+        this.frameTimer = 0;
+        //计算出两次数据包的时间步长
+        this.curTick = time;
+        if (this.curTick != 0 && this.oldTick != 0) {
+            this.timeFrame = this.curTick - this.oldTick;
+        }
+        this.oldTick = this.curTick;
+        //服务器立即处理请求更新状态，而不是等到更新时再处理
+        if (!this._isClient) {
+            this.processSyncData();
+        }
     };
-    //结束处理网络输入
-    //清空已处理数据 并交换未处理数据，等待下一帧处理
-    UGameInstance.prototype.endProcessSyncData = function () {
-        this.receiveBuffer = [];
-        this.receiveBuffer.concat(this.receiveBufferTemp);
-        this.receiveBufferTemp = [];
-        this.receiveFlag = false;
-    };
+    //处理网络数据
     UGameInstance.prototype.processSyncData = function () {
-        this.startProcessSyncData();
-        this.endProcessSyncData();
+        var _this = this;
+        if (this.receiveBuffer.length != 0) {
+            // console.log(this.receiveBuffer);
+        }
+        this.receiveBuffer.forEach(function (buffer) {
+            //从哪儿来到哪儿去
+            var id = buffer.id;
+            var obj = _this.world.actorSystem.objMap.get(id);
+            if (obj) {
+                obj.receiveData(buffer.data);
+            }
+        });
+        this.receiveBuffer = [];
+    };
+    UGameInstance.prototype.update = function (dt) {
+        if (this.world == null) {
+            return;
+        }
+        if (this.world.gameState != Enums_1.GameState.Playing) {
+            return;
+        }
+        this.debugTimer += dt;
+        if (this.debugTimer > this.debugDelay) {
+            this.debugTimer = 0;
+        }
+        if (this.sendBuffer.length != 0) {
+        }
+        this.frameTimer += dt * 1000;
+        this.frameRate = UMath_1.UMath.clamp01(this.frameTimer / this.timeFrame / 2);
+        this.deltaTime = dt;
+        this.passTime += dt;
+        //1.处理输入
+        if (this._isClient) {
+            this.processSyncData();
+        }
+        //2.用输入或状态更新世界，并且将本机的操作添加到发送队列
+        this.world.update(dt);
+        //3.发送输出
+        this.sendAllGameData();
+        this.passTime = 0;
     };
     UGameInstance.prototype.getWorld = function () { return this.world; };
     UGameInstance.prototype.getWorldView = function () { return this.view; };
+    UGameInstance.prototype.setWorldView = function (view) {
+        this.view = view;
+    };
     /** 关卡管理 */
     //打开一个关卡
     UGameInstance.prototype.openWorld = function (world, data, view) {
         if (data === void 0) { data = null; }
-        this.frameTime = 1 / this.fps;
-        this.view = view;
+        // XTestMain();
+        // this.view = view;
         if (this.world != null) {
             console.warn("WARN: currentWorld not null,");
             this.closeWorld();
@@ -129,27 +172,6 @@ var UGameInstance = /** @class */ (function (_super) {
         this.world = world;
         this.world.gameInstance = this;
         this.world.init(data);
-    };
-    //当前关卡 网络处理+逻辑处理+本地输入循环
-    UGameInstance.prototype.update = function (dt) {
-        this.deltaTime = dt;
-        this.passTime += dt;
-        //TODO 锁定逻辑针，不受到操作卡住逻辑。
-        this.frameTimer += dt;
-        if (this.frameTimer > this.frameTime) {
-            this.frameTimer = 0;
-            if (this.world != null) {
-                //1.处理网络输入
-                this.processSyncData();
-                //2.用输入或状态更新世界，并且将本机的操作添加到发送队列
-                this.world.update(dt);
-                //清除当前本地输入
-                this.input.Clear();
-                //3.发送当前帧输入
-                this.sendAllGameData();
-            }
-            this.passTime = 0;
-        }
     };
     //TODO 切换关卡
     UGameInstance.prototype.switchWorld = function (oldWorldData) {
@@ -161,7 +183,9 @@ var UGameInstance = /** @class */ (function (_super) {
     };
     //调试关卡
     UGameInstance.prototype.drawDebug = function (graphic) {
-        this.world.debugSystem.debugAll(graphic);
+        if (this._isClient && this.world && this.world.debugSystem) {
+            this.world.debugSystem.debugAll(graphic);
+        }
     };
     var UGameInstance_1;
     UGameInstance = UGameInstance_1 = __decorate([

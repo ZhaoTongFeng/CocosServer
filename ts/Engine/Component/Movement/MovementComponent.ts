@@ -1,5 +1,6 @@
+import AActor from "../../Actor/Actor";
 import APawn from "../../Actor/Pawn/Pawn";
-import { UInput } from "../../Engine/InputSystem/Input";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
 import { xclass, xproperty } from "../../Engine/ReflectSystem/XBase";
 import { UVec2, uu } from "../../Engine/UMath";
 import UComponent from "../Component";
@@ -57,14 +58,24 @@ export default class UMovementComponent extends UComponent {
 
 
 
-    public init(obj: any) {
-        super.init(obj);
-        if (obj instanceof APawn) {
-            obj.setMovement(this);
+
+    onLoad(ac: AActor) {
+        super.onLoad(ac);
+
+        if (ac instanceof APawn) {
+            ac.setMovement(this);
         }
     }
 
-    public processInput(input: UInput) {
+    addMoveForce(value: UVec2) {
+        this.force.addSelf(value.mul(this.max_force));
+    }
+
+    setMoveForce(value: UVec2) {
+        this.force = value.mulSelf(this.max_force);
+    }
+
+    public processInput(input: UInputSystem) {
 
     }
 

@@ -26,7 +26,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Object_1 = __importDefault(require("../../../Object"));
 var XBase_1 = require("../../ReflectSystem/XBase");
-var NetCmd_1 = require("./NetCmd");
 /**
  * 网络管理器
  * 客户端只有一个，服务端也只有一个
@@ -88,7 +87,6 @@ var NetworkSystem = /** @class */ (function (_super) {
     NetworkSystem.prototype.unRegister = function (cmd) { this.events.delete(cmd); };
     //初始化网络相关系统
     NetworkSystem.prototype.init = function () {
-        this.register(NetCmd_1.NetCmd.HEART, this.onHeart, this);
     };
     /************************************************
      * 生命周期
@@ -112,7 +110,11 @@ var NetworkSystem = /** @class */ (function (_super) {
             args[_i] = arguments[_i];
         }
     };
+    NetworkSystem.prototype.getCurrentTime = function () {
+        return new Date().getTime();
+    };
     var NetworkSystem_1;
+    NetworkSystem.isServer = true;
     NetworkSystem = NetworkSystem_1 = __decorate([
         XBase_1.xclass(NetworkSystem_1)
     ], NetworkSystem);

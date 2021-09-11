@@ -24,9 +24,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var MovementComponent_1 = __importDefault(require("../../Component/Movement/MovementComponent"));
 var XBase_1 = require("../../Engine/ReflectSystem/XBase");
 var Actor_1 = __importDefault(require("../Actor"));
 var AIController_1 = __importDefault(require("../Controller/AIController"));
+var Controller_1 = __importDefault(require("../Controller/Controller"));
 /**
  * 角色基类
  * 包含基本的位移操作
@@ -54,10 +56,6 @@ var APawn = /** @class */ (function (_super) {
     APawn.prototype.setMovement = function (movement) {
         this.movementComponent = movement;
     };
-    //创建
-    APawn.prototype.init = function (world) {
-        _super.prototype.init.call(this, world);
-    };
     //输入
     APawn.prototype.processSelfInput = function (input) {
     };
@@ -75,6 +73,12 @@ var APawn = /** @class */ (function (_super) {
         _super.prototype.onDestory.call(this);
     };
     var APawn_1;
+    __decorate([
+        XBase_1.xproperty(Controller_1.default, {})
+    ], APawn.prototype, "controller", void 0);
+    __decorate([
+        XBase_1.xproperty(MovementComponent_1.default, {})
+    ], APawn.prototype, "movementComponent", void 0);
     APawn = APawn_1 = __decorate([
         XBase_1.xclass(APawn_1)
     ], APawn);

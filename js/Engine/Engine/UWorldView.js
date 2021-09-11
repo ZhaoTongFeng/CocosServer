@@ -24,8 +24,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var ClientNetworkSystem_1 = __importDefault(require("./NetworkSystem/Client/ClientNetworkSystem"));
 var XBase_1 = require("./ReflectSystem/XBase");
 var UGraphic_1 = __importDefault(require("./UGraphic"));
+var UMath_1 = require("./UMath");
 /**
  * Logic-View
  * Client Only
@@ -40,24 +42,35 @@ var UWorldView = /** @class */ (function (_super) {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         //调试工具
         _this.graphic = new UGraphic_1.default();
-        _this.gameInstance = null;
+        //屏幕大小
+        _this.winSize = UMath_1.uu.v2(2000, 2000);
+        //默认从当前房间拿游戏实例
+        _this._gameInstance = null;
         return _this;
     }
     UWorldView_1 = UWorldView;
+    Object.defineProperty(UWorldView.prototype, "gameInstance", {
+        get: function () {
+            return ClientNetworkSystem_1.default.Ins.roomManager.getLocRoom().gameInstance;
+        },
+        set: function (value) {
+            // this._gameInstance = value;
+        },
+        enumerable: false,
+        configurable: true
+    });
     //退出和进入此场景操作
     //SEVER 服务器直接从这里开始 
     UWorldView.prototype.onEnter = function (world, data) {
         if (data === void 0) { data = null; }
         this.gameInstance.openWorld(world, data, this);
+        return world;
     };
     UWorldView.prototype.onExit = function () {
         this.gameInstance.closeWorld();
     };
-    //Client的逻辑更新入口
-    UWorldView.prototype.update = function (dt) {
-        if (this.gameInstance) {
-            this.gameInstance.update(dt);
-        }
+    UWorldView.prototype.updateOnec = function (dt) {
+        if (dt === void 0) { dt = 0; }
     };
     UWorldView.prototype.addSceneComponent = function (comp) { };
     UWorldView.prototype.removeSceneComponent = function (comp) { };

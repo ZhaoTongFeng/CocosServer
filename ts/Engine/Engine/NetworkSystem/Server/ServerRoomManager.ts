@@ -1,11 +1,11 @@
-import { xclass, xproperty } from "../../ReflectSystem/XBase";
-import Manager from "../Share/Manager";
+import { xclass, xproperty, xStatusSync } from "../../ReflectSystem/XBase";
 import { NetCmd } from "../Share/NetCmd";
 import RoomManager from "../Share/RoomManager";
-
 import ServerNetworkSystem from "./ServerNetworkSystem";
-import Room from "./ServerRoom";
+import ServerRoom from "./ServerRoom";
+
 import ServerUserManager from "./ServerUserManager";
+
 
 
 
@@ -20,34 +20,30 @@ import ServerUserManager from "./ServerUserManager";
  */
 @xclass(ServerRoomManager)
 export default class ServerRoomManager extends RoomManager {
-
-    @xproperty(Number)
     protected incId: number = 0;
-
-    //房间列表
-    @xproperty(Map)
-    public rooms: Map<string, Room> = new Map();
 
     public getRoomById(id: string) {
         return this.rooms.get(id);
     }
-    public insert() {
-        let room = new Room();
-        room.id = this.incId + "";
+    public insert(id_room) {
+        let room = new ServerRoom();
+        room.id = id_room;
+        room.mng = this;
         this.rooms.set(room.id, room);
-        this.incId++;
+
+        // this.incId++;
         return room;
     }
 
     //直接删除或者放回房间池
-    public delete(room: Room) {
+    public delete(room: ServerRoom) {
         this.rooms.delete(room.id);
     }
 
     //0.注册回调
     public init(ns: ServerNetworkSystem) {
         super.init(ns);
-
+        
     }
 
     //客户端请求当前房间 简要列表
@@ -58,21 +54,30 @@ export default class ServerRoomManager extends RoomManager {
             console.log("未登录", key, obj)
             return;
         }
-        let arr = [];
-        this.rooms.forEach(room => {
-            let ids = [];
-            room.users.forEach((user, id) => {
-                ids.push(id);
-            });
-            arr.push({
-                id: room.id,
-                size: room.users.size,
-                ids: ids
-            });
-        });
-        user.sendCmd(NetCmd.ROOM_LIST, arr);
+
+        let out = {
+            data: this.toJSON()
+        }
+
+        // let arr = [];
+        // this.rooms.forEach(room => {
+        //     let ids = [];
+        //     room.users.forEach((user, id) => {
+        //         ids.push(id);
+        //     });
+        //     arr.push({
+        //         id: room.id,
+        //         size: room.users.size,
+        //         ids: ids
+        //     });
+        // });
+        user.sendCmd(NetCmd.ROOM_LIST, out);
     }
 
+
+    public onGetRoomInfo(key, conn, obj) {
+
+    }
 
 
 
@@ -84,7 +89,8 @@ export default class ServerRoomManager extends RoomManager {
             console.log("未登录", key, obj)
             return;
         }
-        let room = this.insert();
+        let id_room = "abc";
+        let room = this.insert(id_room);
         room.onAdd(user);
         console.log("用户", user.id_user, "创建房间", room.id, room.getUserCount());
     }
@@ -101,16 +107,20 @@ export default class ServerRoomManager extends RoomManager {
         let id_room = obj['id_room'];
         let room = this.getRoomById(id_room);
         if (!room) {
-            let out = {
-                code: 1,
-                err: "房间不存在"
-            }
-            user.sendCmd(NetCmd.ROOM_JOIN, out);
+            //房间不存在，创建房间
+            room = this.insert(id_room);
+            room.onAdd(user);
+            console.log("用户", user.id_user, "创建房间", room.id, room.getUserCount());
+            // let out = {
+            //     code: 1,
+            //     err: "房间不存在"
+            // }
+            // user.sendCmd(NetCmd.ROOM_JOIN, out);
         } else {
-            room.onJoin(user);
-            console.log("用户", user.id_user, "加入房间", room.id, room.getUserCount());
-        }
 
+        }
+        room.onJoin(user);
+        console.log("用户", user.id_user, "加入房间", room.id, room.getUserCount());
     }
 
     //退出请求来自客户端
@@ -159,7 +169,133 @@ export default class ServerRoomManager extends RoomManager {
         }
     }
 
+    /**
+     * 准备阶段
+     */
+    //1.2客户端要求开始游戏
+    protected onGameBeg(key, conn, obj) {
+        
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onGameBeg(user);
+    }
+
+    //2.2客户端进入游戏场景，准备接受关卡数据
+    protected onGameReady(key, conn, obj) {
+        
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onGameReady(user);
+    }
+
+    //3.3客户端接收关卡数据完成
+    protected onLoadLevelData(key, conn, obj) {
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onLoadLevelData(user);
+    }
+    
+    //4.3客户端开始游戏
+    protected onGamePlay(key, conn, obj) {
+       
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onGamePlay(user);
+    }
+
+    /**
+     * 同步阶段
+     */
+    //5.2客户端发送操作指令
+    protected onReceiveGameData(key, conn, obj) {
+        // console.log("客户端发送指令")
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onReceiveGameData(user,obj);
+    }
+
+
+
+    /**
+     * 结算阶段
+     */
+    //7.3
+    protected onSendGameFinish(key, conn, obj) {
+        console.log("客户端收到游戏结束")
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onSendGameFinish(user);
+    }
+
+    //8.3
+    protected onSendGameResult(key, conn, obj) {
+        console.log("客户端收到游戏结果")
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onSendGameResult(user);
+    }
+
+    //9.3
+    protected onSendGameEnd(key, conn, obj) {
+        console.log("客户端收到游戏彻底结束")
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onSendGameEnd(user);
+    }
+
+
+
+
     protected onSyncGame(key, conn, obj) {
         // this.curRoom.onSyncGame(obj, this.gameInstance);
     }
+
 }

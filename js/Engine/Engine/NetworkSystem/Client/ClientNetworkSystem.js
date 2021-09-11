@@ -59,8 +59,9 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
         //心跳包
         _this.heartFlag = false;
         _this.heartHandle = -1;
-        _this.heartDelay = 5000;
+        _this.heartDelay = 10 * 1000;
         _this.sendTime = 0;
+        _this.receiveTime = 0;
         return _this;
     }
     ClientNetworkSystem_1 = ClientNetworkSystem;
@@ -78,20 +79,23 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
      ************************************************/
     ClientNetworkSystem.prototype.getLocId = function () {
         var userMng = this.userManager;
-        return userMng.locUser.id_user;
+        return userMng.id_loc;
     };
     ClientNetworkSystem.prototype.isThisUser = function (id_user) {
         var userMng = this.userManager;
-        return userMng.locUser.id_user == id_user;
+        return userMng.id_loc == id_user;
     };
     /************************************************
      * 发送
      ************************************************/
     ClientNetworkSystem.prototype.sendCmd = function (cmd, obj) {
+        if (obj === void 0) { obj = {}; }
         obj["opt"] = cmd;
         var str = JSON.stringify(obj);
         this.ws.send(str);
-        console.log("Client", obj);
+        if (cmd != NetCmd_1.NetCmd.HEART) {
+            // console.log("Client", obj);
+        }
     };
     /************************************************
      * 接收
@@ -100,14 +104,16 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
         var str = e.data;
         var obj = JSON.parse(str);
         var opt = Number(obj["opt"]);
-        console.log("Server:" + str);
         //发送回调
+        //稳定回调，百分之百对应接口
         var tuple = this.events.get(opt);
         if (tuple) {
             var func = tuple[0];
             var caller = tuple[1];
             func.call(caller, obj);
         }
+        //外部回调，外面用on注册
+        this.emit(opt + "", obj);
     };
     /************************************************
      * 指令 和 系统 注册
@@ -119,6 +125,7 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
         this.userManager.init(this);
         this.roomManager = new ClientRoomManager_1.default();
         this.roomManager.init(this);
+        this.register(NetCmd_1.NetCmd.HEART, this.onHeart, this);
     };
     /************************************************
      * 生命周期
@@ -150,7 +157,7 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
         console.log("UNetworkSystem Opened");
         this.userManager.onConnected();
         //开启心跳
-        // this.startHeart();
+        this.startHeart();
         this.endReConnect();
     };
     ClientNetworkSystem.prototype.onError = function (e) {
@@ -200,20 +207,25 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
             clearTimeout(this.heartHandle);
         }
     };
-    ClientNetworkSystem.prototype.getCurrentTime = function () {
-        return new Date().getTime();
-    };
+    //客户端发送
+    //服务器接收
+    //客户端接收
+    //客户端发送时刻 接收时刻
+    //服务器 计算三者延迟，接收时刻
     ClientNetworkSystem.prototype.sendHeart = function () {
-        this.sendTime = this.getCurrentTime();
-        this.sendCmd(NetCmd_1.NetCmd.HEART, {});
+        this.sendTime = this.getCurrentTime(); //发送时刻
+        this.sendCmd(NetCmd_1.NetCmd.HEART, {
+            data: [this.sendTime, this.receiveTime]
+        });
     };
-    ClientNetworkSystem.prototype.onHeart = function () {
-        //TODO 计算延迟
-        var curTime = this.getCurrentTime();
-        this.delay = curTime - this.sendTime;
-        console.log("延迟", this.delay);
+    ClientNetworkSystem.prototype.onHeart = function (obj) {
+        this.receiveTime = this.getCurrentTime(); //接收时刻
+    };
+    ClientNetworkSystem.prototype.getServerInfo = function () {
+        this.sendCmd(NetCmd_1.NetCmd.DEV_SERVER_STATUS);
     };
     var ClientNetworkSystem_1;
+    ClientNetworkSystem.Ins = null;
     ClientNetworkSystem = ClientNetworkSystem_1 = __decorate([
         XBase_1.xclass(ClientNetworkSystem_1)
     ], ClientNetworkSystem);

@@ -34,6 +34,7 @@ var ClientUser = /** @class */ (function (_super) {
     ClientUser_1 = ClientUser;
     var ClientUser_1;
     ClientUser = ClientUser_1 = __decorate([
+        XBase_1.xClient("User"),
         XBase_1.xclass(ClientUser_1)
     ], ClientUser);
     return ClientUser;

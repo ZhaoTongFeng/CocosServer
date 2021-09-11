@@ -1,6 +1,6 @@
 
 import UGameInstance from "../../Engine/GameInstance";
-import { UInput } from "../../Engine/InputSystem/Input";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
 import { xclass } from "../../Engine/ReflectSystem/XBase";
 
 import USceneComponent from "./SceneComponent";

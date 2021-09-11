@@ -59,6 +59,7 @@ var ServerNetworkSystem = /** @class */ (function (_super) {
         this._broadcast(this.ws, msg);
     };
     ServerNetworkSystem.prototype.sendCmd = function (conn, cmd, obj) {
+        if (obj === void 0) { obj = {}; }
         try {
             obj["opt"] = cmd;
             var str = null;
@@ -96,6 +97,8 @@ var ServerNetworkSystem = /** @class */ (function (_super) {
         this.userManager.init(this);
         this.roomManager = new ServerRoomManager_1.default();
         this.roomManager.init(this);
+        this.register(NetCmd_1.NetCmd.DEV_SERVER_STATUS, this.onServerInfo, this);
+        this.register(NetCmd_1.NetCmd.HEART, this.onHeart, this);
     };
     /************************************************
      * 生命周期
@@ -110,7 +113,19 @@ var ServerNetworkSystem = /** @class */ (function (_super) {
     };
     //心跳包
     ServerNetworkSystem.prototype.onHeart = function (key, conn, obj) {
-        this.sendCmd(conn, NetCmd_1.NetCmd.HEART, {});
+        var user = this.getUserByKey(key);
+        var out = {};
+        var data = obj["data"];
+        if (user) {
+            var sendTime = data[0]; //这帧发送时刻
+            var curTime = this.getCurrentTime(); //当前时刻
+            var serverTick = user.serverHartTick; //上一帧发送时刻
+            var receiveTime = data[1]; //上一帧接收时刻
+            user.delay_clientToServer = (curTime - sendTime);
+            user.delay_serverToClient = receiveTime - serverTick;
+            user.serverHartTick = curTime;
+        }
+        this.sendCmd(conn, NetCmd_1.NetCmd.HEART, out);
     };
     //连接断开
     ServerNetworkSystem.prototype.onClose = function (conn, code, reason) {
@@ -124,6 +139,19 @@ var ServerNetworkSystem = /** @class */ (function (_super) {
     };
     //TODO 连接超时，清除peeding
     ServerNetworkSystem.prototype.onTimeOut = function () {
+    };
+    ServerNetworkSystem.prototype.onServerInfo = function (key, conn, obj) {
+        var userManger = this.userManager;
+        var roomManager = this.roomManager;
+        var out = {
+            "ped": this.connPeeding.size,
+            "es": this.connMap.size,
+            "uk": userManger.userKeyMap.size,
+            "uid": userManger.userIdMap.size,
+            "ulose": userManger.userLoseMap.size,
+            "rooms": roomManager.rooms.size
+        };
+        this.sendCmd(conn, NetCmd_1.NetCmd.DEV_SERVER_STATUS, out);
     };
     ServerNetworkSystem.prototype.printInfo = function () {
         // console.log(

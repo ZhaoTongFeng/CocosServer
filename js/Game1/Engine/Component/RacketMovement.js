@@ -44,7 +44,7 @@ var RacketMovement = /** @class */ (function (_super) {
     ], RacketMovement.prototype, "targetPos", void 0);
     RacketMovement = RacketMovement_1 = __decorate([
         XBase_1.xclass(RacketMovement_1),
-        XBase_1.xStatusSync(RacketMovement_1, ["targetPos"])
+        XBase_1.xStatusSync(["targetPos"])
     ], RacketMovement);
     return RacketMovement;
 }(MovementComponent_1.default));

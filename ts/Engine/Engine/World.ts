@@ -1,5 +1,5 @@
-
 import AActor from "../Actor/Actor";
+import APlayerController from "../Actor/Controller/PlayerController";
 import AGameModeBase from "../Actor/Info/GameModeBase";
 import APawn from "../Actor/Pawn/Pawn";
 import UComponent from "../Component/Component";
@@ -10,7 +10,9 @@ import { UDebugSystem } from "./DebugSystem/DebugSystem";
 import { GameState, UpdateState } from "./Enums";
 import UGameInstance from "./GameInstance";
 import { UInputSystem } from "./InputSystem/InputSystem";
-import { xclass } from "./ReflectSystem/XBase";
+
+import User from "./NetworkSystem/Share/User";
+import { xclass, xproperty } from "./ReflectSystem/XBase";
 
 /**
  * 一个关卡 逻辑关卡
@@ -18,38 +20,104 @@ import { xclass } from "./ReflectSystem/XBase";
  */
 @xclass(UWorld)
 export default class UWorld extends UObject {
-    /** 关卡状态 */
+
+    /** 接口 */
+    /**
+     * 1.根据玩家数量生成Controller
+     * Room传入users
+     * 生成控制器，并建立用户和控制器的双向绑定
+     */
+    public initPlayerControllers() { }
+
+    /**
+     * 2.为每一个PlayerController生成一个Actor
+     */
+    protected initPlayerActors() { }
+
+    /**
+     * 生成除了玩家以外的actor
+     */
+    protected initOtherActors() { }
+
+
+    /**
+     * 更新完成之后操作，比如碰撞检测
+     * @param dt 
+     */
+    protected updateWorld(dt) { }
+
+
+
+    /** 数据统计 */
+    maxActorCount: number = 0;
+
+    /** 标志位 */
     isDebug: boolean = false;
     isUpdating: boolean = false;
+    usePool: boolean = false;
     gameState: GameState = GameState.Paused;
+    isClient: boolean = false;
 
+
+
+
+    /** 主要数据 */
+    @xproperty(Array)
     actors: AActor[] = [];
+    //这个世界的自增ID
+    private _generateID: number = 0;
+    public GenerateNewId(): string {
+        let id = this._generateID;
+        this._generateID++;
+        return id + "";
+    }
+    getCurrentGenID() {
+        return this._generateID;
+    }
+    setCurrentGenID(id: number) {
+        this._generateID = id;
+    }
+
+    private _users: User[] = [];
+    public get users(): User[] {
+        return this.gameInstance.room.getAllUsers();
+    }
+    public set users(value: User[]) {
+        this._users = value;
+    }
+
+    /** 缓存 */
     actors_kill: AActor[] = [];
     actors_peending: AActor[] = [];
 
     actorPool: Map<string, AActor[]> = new Map();
-    componentPoos: Map<string, UComponent[]> = new Map();
-    maxActorCount: number = 0;
+    compPool: Map<string, UComponent[]> = new Map();
 
-    /** 系统 */
-    collisionSystem: UCollisionSystem = null;
+    /**
+     * user到controller的映射
+     * 用户输入，流入成controller输入，controller输入流入World
+     */
+    @xproperty(Map)
+    protected pUserControllerMap: Map<string, APlayerController> = new Map();
 
-    //controller在这里注册，收到网络请求时统一进行处理
-    inputSystem: UInputSystem = null;
-
-    debugSystem: UDebugSystem = null;
-
-    //对象管理
-    actorSystem: UActorSystem = null;
+    /**
+     * controller到user的映射
+     * 结算时，controller数据带上user.id_user，发送给所有用户
+     */
+    @xproperty(Map)
+    protected pControllerUserMap: Map<string, User> = new Map();
 
     /** 指针 */
+    collisionSystem: UCollisionSystem = null;
+    inputSystem: UInputSystem = null;
+    debugSystem: UDebugSystem = null;
+    actorSystem: UActorSystem = null;
+
     gameInstance: UGameInstance = null;
     gameMode: AGameModeBase = null;
     player: APawn = null;
+    playerController: APlayerController = null;
 
-    usePool: boolean = true;
-
-    isClient:boolean = false;
     // 被创建时 初始化关卡
     public init(data: any = null) {
         super.init(data);
@@ -66,9 +134,14 @@ export default class UWorld extends UObject {
         this.actorSystem = new UActorSystem();
         this.actorSystem.init(this);
 
-        this.gameState = GameState.Playing
+
         this.isClient = this.gameInstance.getIsClient();
+
+        //注册自己
+        this.id = this.GenerateNewId();
+        this.actorSystem.registerObj(this);
     }
+
 
     //释放关卡
     public destory() {
@@ -114,20 +187,7 @@ export default class UWorld extends UObject {
             //删除这一帧删除的AC
             for (let i = this.actors.length - 1; i >= 0; i--) {
                 if (this.actors[i].state == UpdateState.Dead) {
-                    this.actors[i].onDestory();
-
-
-                    //添加到对象池
-                    if (this.usePool) {
-                        this.actors[i].unUse();
-                        if (this.actors[i] != null) {
-                            let clsName = this.actors[i].constructor.name;
-                            let arr = this.actorPool.get(clsName);
-                            arr.push(this.actors[i]);
-                        }
-
-                    }
-
+                    this.destoryActor(this.actors[i]);
                     this.actors.splice(i, 1);
                 }
             }
@@ -136,8 +196,8 @@ export default class UWorld extends UObject {
         }
     }
 
-    //Override Actor 更新完成之后操作，比如碰撞检测
-    public updateWorld(dt) { }
+
+
 
 
     //在程序中生成Actor，所有actor的创建，必须通过这个注册
@@ -164,17 +224,32 @@ export default class UWorld extends UObject {
             actor = new c();
         }
         actor.init(this);
+
         return actor;
+    }
+
+    destoryActor(actor: AActor) {
+        actor.onDestory();
+        //添加到对象池
+        if (this.usePool) {
+            actor.unUse();
+            if (actor != null) {
+                let clsName = actor.constructor.name;
+                let arr = this.actorPool.get(clsName);
+                arr.push(actor);
+            }
+        }
+        this.actorSystem.unRegisterObj(actor);
     }
 
     spawnComponent<A extends UComponent>(actor: AActor, c: new () => A): A {
         let comp = null;
         if (this.usePool) {
             let clsName = c.name;
-            if (this.componentPoos.has(clsName) == false) {
-                this.componentPoos.set(clsName, []);
+            if (this.compPool.has(clsName) == false) {
+                this.compPool.set(clsName, []);
             }
-            let arr = this.componentPoos.get(clsName);
+            let arr = this.compPool.get(clsName);
             if (arr.length == 0) {
                 // console.log("New Component", clsName);
                 comp = new c();
@@ -190,6 +265,8 @@ export default class UWorld extends UObject {
             comp = new c();
         }
         comp.init(actor);
+
+
         return comp;
     }
 
@@ -205,6 +282,8 @@ export default class UWorld extends UObject {
             actor.onInit();
             this.actors.push(actor);
         }
+
+
         if (this.actors.length > this.maxActorCount) {
             this.maxActorCount = this.actors.length;
             // console.log("最大Actor数量", this.maxActorCount);

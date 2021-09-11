@@ -21,7 +21,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ConnectionStatus = void 0;
 var XBase_1 = require("../../ReflectSystem/XBase");
+var ConnectionStatus;
+(function (ConnectionStatus) {
+    ConnectionStatus[ConnectionStatus["CONNECTING"] = 0] = "CONNECTING";
+    ConnectionStatus[ConnectionStatus["CONNECTED"] = 1] = "CONNECTED";
+    ConnectionStatus[ConnectionStatus["LOSE"] = 2] = "LOSE";
+})(ConnectionStatus = exports.ConnectionStatus || (exports.ConnectionStatus = {}));
 var User = /** @class */ (function (_super) {
     __extends(User, _super);
     function User() {
@@ -32,13 +39,27 @@ var User = /** @class */ (function (_super) {
         _this.key_conn = "";
         //当前所在房间
         _this.id_room = "";
+        //连接状态
+        _this.conState = ConnectionStatus.CONNECTING;
+        //客户端是否准备就绪
+        _this.game_ready = 0;
+        //关卡是否加载
+        _this.game_loaded = 0;
+        //游戏运行时，对应的控制器ID
+        _this.id_controller = "";
+        //客户端到服务器延迟
+        _this.delay_clientToServer = 0;
+        //服务器到客户端延迟
+        _this.delay_serverToClient = 0;
+        //心跳计时器
+        _this.serverHartTick = 0;
         _this.mng = null;
         return _this;
     }
     User_1 = User;
-    User.prototype.init = function (mng) {
-        this.mng = mng;
-    };
+    //总延迟
+    User.prototype.getTotalDelay = function () { return this.delay_serverToClient + this.delay_clientToServer; };
+    User.prototype.init = function (mng) { this.mng = mng; };
     var User_1;
     __decorate([
         XBase_1.xproperty(String)
@@ -49,6 +70,21 @@ var User = /** @class */ (function (_super) {
     __decorate([
         XBase_1.xproperty(String)
     ], User.prototype, "id_room", void 0);
+    __decorate([
+        XBase_1.xproperty(Number)
+    ], User.prototype, "conState", void 0);
+    __decorate([
+        XBase_1.xproperty(Number)
+    ], User.prototype, "game_ready", void 0);
+    __decorate([
+        XBase_1.xproperty(Number)
+    ], User.prototype, "game_loaded", void 0);
+    __decorate([
+        XBase_1.xproperty(Number)
+    ], User.prototype, "delay_clientToServer", void 0);
+    __decorate([
+        XBase_1.xproperty(Number)
+    ], User.prototype, "delay_serverToClient", void 0);
     User = User_1 = __decorate([
         XBase_1.xclass(User_1)
     ], User);

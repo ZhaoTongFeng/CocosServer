@@ -1,27 +1,63 @@
-import { xclass, xproperty } from "../../ReflectSystem/XBase";
+import { xclass, xproperty, xStatusSync } from "../../ReflectSystem/XBase";
 import Manager from "../Share/Manager";
 import { NetCmd } from "../Share/NetCmd";
+import { ConnectionStatus } from "../Share/User";
 import UserManager from "../Share/UserManager";
-
 import ServerNetworkSystem from "./ServerNetworkSystem";
-import ServerUser, { ConnectionStatus } from "./ServerUser";
-import User from "./ServerUser";
+import ServerUser from "./ServerUser";
+
+
 
 @xclass(ServerUserManager)
+@xStatusSync(["userKeyMap","userLoseMap"])
 export default class ServerUserManager extends UserManager {
 
     //用户信息
     @xproperty(Map)
-    public userKeyMap: Map<string, User> = new Map();
+    public userKeyMap: Map<string, ServerUser> = new Map();
 
     //断线用户
     @xproperty(Map)
-    public userLoseMap: Map<string, User> = new Map();
+    public userLoseMap: Map<string, ServerUser> = new Map();
+
+    private spawnNewUser(id_user){
+        let user = new ServerUser();
+        user.mng = this;
+        user.id_user = id_user;
+        return user;
+    }
+
 
     public getUserByKey(key: string) {
         return this.userKeyMap.get(key);
     }
 
+    public onGetList(key, conn, obj) {
+
+        let user = this.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+
+        let out = {
+            data:this.toJSON()
+        }        
+
+        // let arr = [];
+        // this.rooms.forEach(room => {
+        //     let ids = [];
+        //     room.users.forEach((user, id) => {
+        //         ids.push(id);
+        //     });
+        //     arr.push({
+        //         id: room.id,
+        //         size: room.users.size,
+        //         ids: ids
+        //     });
+        // });
+        user.sendCmd(NetCmd.USER_LIST, out);
+    }
 
     //0.注册回调
     public init(ns: ServerNetworkSystem) {
@@ -29,12 +65,10 @@ export default class ServerUserManager extends UserManager {
         ns.register(NetCmd.LOGIN, this.onLogin, this);
     }
 
-
     //1.网络连接成功，发送第一个包
     public onConnected(key, conn) {
         this.hellow(key, conn);
     }
-
 
     //2.发送第一个包
     public hellow(key, conn) {
@@ -64,8 +98,7 @@ export default class ServerUserManager extends UserManager {
         } else {
             user = this.userIdMap.get(id_user) as ServerUser
             if (!user) {
-                user = new User();
-                user.id_user = id_user;
+                user = this.spawnNewUser(id_user);
                 console.log("用户首次登录", user.id_user);
             } else {
                 console.log("连接状态下的用户重新登录", user.id_user);

@@ -3,10 +3,10 @@ import UComponent from "../Component/Component";
 import USceneComponent from "../Component/SceneComponent/SceneComponent";
 
 import { UpdateState } from "../Engine/Enums";
-import { UInput } from "../Engine/InputSystem/Input";
+import { UInputSystem } from "../Engine/InputSystem/InputSystem";
 import { XBase, xclass, xproperty } from "../Engine/ReflectSystem/XBase";
 import UGraphic from "../Engine/UGraphic";
-import { uu, UVec2 } from "../Engine/UMath";
+import { AABB, uu, UVec2 } from "../Engine/UMath";
 import UWorld from "../Engine/World";
 import UObject from "../Object";
 
@@ -22,21 +22,20 @@ import UObject from "../Object";
  */
 @xclass(AActor)
 export default class AActor extends UObject {
+    /** 特有数据，一般需要传输的类型 */
+    @xproperty(Array)
+    public components: UComponent[] = [];
 
-    public world: UWorld = null;
-
-    @xproperty(Number)
+    /** 标志位类型，按需使用装饰器 */
     public state: UpdateState = UpdateState.Peeding;
-
-    @xproperty(Boolean)
     public reComputeTransform: boolean = true;
 
-    @xproperty(XBase)
-    private components: UComponent[] = [];
-
+    /** 引用类型，不要使用装饰器进行修饰，在init中进行恢复 */
+    public world: UWorld = null;
     private rootComponent: UComponent = null;
     private sceneComponent: USceneComponent = null;
     protected collisionComponent: UCollisionComponent = null;
+
 
 
     //Override
@@ -58,10 +57,22 @@ export default class AActor extends UObject {
 
     //Override
     //被创建时 立即调用
-    init(world: UWorld) {
+    //建立引用
+    init(world: UWorld, id = -1) {
         super.init(world);
         this.world = world;
-        this.world.addActor(this);
+        world.addActor(this);
+        if (id == -1) {
+            id = Number(this.world.GenerateNewId());
+        }
+        this.id = id + "";
+        this.onLoad(world);
+    }
+
+    //反序列化之后恢复引用，并注册到动态表中
+    onLoad(world: UWorld) {
+        this.world = world;
+        this.world.actorSystem.registerObj(this);
     }
 
     //Override
@@ -71,7 +82,7 @@ export default class AActor extends UObject {
     }
 
     //输入
-    public processInput(input: UInput) {
+    public processInput(input: UInputSystem) {
         if (this.state = UpdateState.Active) {
             this.processChildrenInput(input);
             this.processSelfInput(input);
@@ -79,8 +90,8 @@ export default class AActor extends UObject {
     }
 
     //Override
-    protected processSelfInput(input: UInput) { }
-    protected processChildrenInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) { }
+    protected processChildrenInput(input: UInputSystem) {
         this.components.forEach(comp => {
             if (comp.state == UpdateState.Active) {
                 comp.processInput(input);
@@ -133,15 +144,16 @@ export default class AActor extends UObject {
             if (comp.state == UpdateState.Active) {
                 comp.drawDebug(graphic);
             }
-
         });
     }
 
     //销毁
     public destory() {
         this.state = UpdateState.Dead;
+        this.world.actorSystem.unRegisterObj(this);
         this.components.forEach(comp => {
             comp.state = UpdateState.Dead;
+            this.world.actorSystem.unRegisterObj(comp);
         });
     }
 
@@ -150,6 +162,7 @@ export default class AActor extends UObject {
         this.components.forEach(comp => {
             comp.onDestory();
             this.checkComponentPool(comp);
+
         });
     }
 
@@ -158,7 +171,7 @@ export default class AActor extends UObject {
         if (comp != null && this.world.usePool) {
             comp.unUse();
             let clsName = comp.constructor.name;
-            let arr = this.world.componentPoos.get(clsName);
+            let arr = this.world.compPool.get(clsName);
             arr.push(comp);
         }
     }
@@ -276,4 +289,15 @@ export default class AActor extends UObject {
             this.reComputeTransform = true;
         }
     }
+
+    public getCatAABB(): AABB {
+        if (!this.sceneComponent) {
+            return null;
+        } else {
+            return this.sceneComponent.catAABB;
+        }
+    }
+
+
+
 }

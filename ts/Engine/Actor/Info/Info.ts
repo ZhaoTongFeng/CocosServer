@@ -1,7 +1,7 @@
 import UCollisionComponent from "../../Component/Collision/CollisionComponent";
 import UComponent from "../../Component/Component";
 import USceneComponent from "../../Component/SceneComponent/SceneComponent";
-import { UInput } from "../../Engine/InputSystem/Input";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
 import { xclass } from "../../Engine/ReflectSystem/XBase";
 import UGraphic from "../../Engine/UGraphic";
 import { UVec2 } from "../../Engine/UMath";
@@ -22,7 +22,7 @@ export default class AInfo extends AActor {
 
     }
 
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
 
     }
 

@@ -2,8 +2,8 @@
 import UCollisionComponent from "../../Component/Collision/CollisionComponent";
 import UComponent from "../../Component/Component";
 import USceneComponent from "../../Component/SceneComponent/SceneComponent";
-import { UInput } from "../../Engine/InputSystem/Input";
-import { xclass } from "../../Engine/ReflectSystem/XBase";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
+import { xclass, xproperty } from "../../Engine/ReflectSystem/XBase";
 import UGraphic from "../../Engine/UGraphic";
 import { UVec2 } from "../../Engine/UMath";
 import UWorld from "../../Engine/World";
@@ -18,7 +18,11 @@ import APawn from "../Pawn/Pawn";
 @xclass(AController)
 export default class AController extends AActor {
 
+    /** 这个指针是中间手动设置的，所以需要跟随世界一起传输 */
+
     pawn: APawn = null;
+    @xproperty(String)
+    id_pawn:string = "";
 
     unUse() {
         super.unUse();
@@ -31,21 +35,22 @@ export default class AController extends AActor {
 
     public sendData(obj:Object){
         let out = [this.id,obj];
-        this.world.gameInstance.sendGameData(out);
+        this.world.gameInstance.sendGameData(out,this);
     }
 
-    public receiveData(obj:Object){
-
-    }
 
 
 
     init(world: UWorld) {
         super.init(world);
-        this.world.inputSystem.register(this);
+        
+    }
+    onLoad(world: UWorld) {
+        super.onLoad(world);
+
     }
 
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
 
     }
 
@@ -58,7 +63,6 @@ export default class AController extends AActor {
     }
 
     public destory() {
-        this.world.inputSystem.unRegister(this);
         super.destory();
     }
 

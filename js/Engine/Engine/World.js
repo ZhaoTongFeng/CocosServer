@@ -39,32 +39,87 @@ var UWorld = /** @class */ (function (_super) {
     __extends(UWorld, _super);
     function UWorld() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        /** 关卡状态 */
+        /** 数据统计 */
+        _this.maxActorCount = 0;
+        /** 标志位 */
         _this.isDebug = false;
         _this.isUpdating = false;
+        _this.usePool = false;
         _this.gameState = Enums_1.GameState.Paused;
+        _this.isClient = false;
+        /** 主要数据 */
         _this.actors = [];
+        //这个世界的自增ID
+        _this._generateID = 0;
+        _this._users = [];
+        /** 缓存 */
         _this.actors_kill = [];
         _this.actors_peending = [];
         _this.actorPool = new Map();
-        _this.componentPoos = new Map();
-        _this.maxActorCount = 0;
-        /** 系统 */
+        _this.compPool = new Map();
+        /**
+         * user到controller的映射
+         * 用户输入，流入成controller输入，controller输入流入World
+         */
+        _this.pUserControllerMap = new Map();
+        /**
+         * controller到user的映射
+         * 结算时，controller数据带上user.id_user，发送给所有用户
+         */
+        _this.pControllerUserMap = new Map();
+        /** 指针 */
         _this.collisionSystem = null;
-        //controller在这里注册，收到网络请求时统一进行处理
         _this.inputSystem = null;
         _this.debugSystem = null;
-        //对象管理
         _this.actorSystem = null;
-        /** 指针 */
         _this.gameInstance = null;
         _this.gameMode = null;
         _this.player = null;
-        _this.usePool = true;
-        _this.isClient = false;
+        _this.playerController = null;
         return _this;
     }
     UWorld_1 = UWorld;
+    /** 接口 */
+    /**
+     * 1.根据玩家数量生成Controller
+     * Room传入users
+     * 生成控制器，并建立用户和控制器的双向绑定
+     */
+    UWorld.prototype.initPlayerControllers = function () { };
+    /**
+     * 2.为每一个PlayerController生成一个Actor
+     */
+    UWorld.prototype.initPlayerActors = function () { };
+    /**
+     * 生成除了玩家以外的actor
+     */
+    UWorld.prototype.initOtherActors = function () { };
+    /**
+     * 更新完成之后操作，比如碰撞检测
+     * @param dt
+     */
+    UWorld.prototype.updateWorld = function (dt) { };
+    UWorld.prototype.GenerateNewId = function () {
+        var id = this._generateID;
+        this._generateID++;
+        return id + "";
+    };
+    UWorld.prototype.getCurrentGenID = function () {
+        return this._generateID;
+    };
+    UWorld.prototype.setCurrentGenID = function (id) {
+        this._generateID = id;
+    };
+    Object.defineProperty(UWorld.prototype, "users", {
+        get: function () {
+            return this.gameInstance.room.getAllUsers();
+        },
+        set: function (value) {
+            this._users = value;
+        },
+        enumerable: false,
+        configurable: true
+    });
     // 被创建时 初始化关卡
     UWorld.prototype.init = function (data) {
         if (data === void 0) { data = null; }
@@ -77,8 +132,10 @@ var UWorld = /** @class */ (function (_super) {
         this.debugSystem.init(this);
         this.actorSystem = new ActorSystem_1.default();
         this.actorSystem.init(this);
-        this.gameState = Enums_1.GameState.Playing;
         this.isClient = this.gameInstance.getIsClient();
+        //注册自己
+        this.id = this.GenerateNewId();
+        this.actorSystem.registerObj(this);
     };
     //释放关卡
     UWorld.prototype.destory = function () {
@@ -116,23 +173,12 @@ var UWorld = /** @class */ (function (_super) {
             //删除这一帧删除的AC
             for (var i = this.actors.length - 1; i >= 0; i--) {
                 if (this.actors[i].state == Enums_1.UpdateState.Dead) {
-                    this.actors[i].onDestory();
-                    //添加到对象池
-                    if (this.usePool) {
-                        this.actors[i].unUse();
-                        if (this.actors[i] != null) {
-                            var clsName = this.actors[i].constructor.name;
-                            var arr = this.actorPool.get(clsName);
-                            arr.push(this.actors[i]);
-                        }
-                    }
+                    this.destoryActor(this.actors[i]);
                     this.actors.splice(i, 1);
                 }
             }
         }
     };
-    //Override Actor 更新完成之后操作，比如碰撞检测
-    UWorld.prototype.updateWorld = function (dt) { };
     //在程序中生成Actor，所有actor的创建，必须通过这个注册
     UWorld.prototype.spawn = function (c) {
         var actor = null;
@@ -157,14 +203,27 @@ var UWorld = /** @class */ (function (_super) {
         actor.init(this);
         return actor;
     };
+    UWorld.prototype.destoryActor = function (actor) {
+        actor.onDestory();
+        //添加到对象池
+        if (this.usePool) {
+            actor.unUse();
+            if (actor != null) {
+                var clsName = actor.constructor.name;
+                var arr = this.actorPool.get(clsName);
+                arr.push(actor);
+            }
+        }
+        this.actorSystem.unRegisterObj(actor);
+    };
     UWorld.prototype.spawnComponent = function (actor, c) {
         var comp = null;
         if (this.usePool) {
             var clsName = c.name;
-            if (this.componentPoos.has(clsName) == false) {
-                this.componentPoos.set(clsName, []);
+            if (this.compPool.has(clsName) == false) {
+                this.compPool.set(clsName, []);
             }
-            var arr = this.componentPoos.get(clsName);
+            var arr = this.compPool.get(clsName);
             if (arr.length == 0) {
                 // console.log("New Component", clsName);
                 comp = new c();
@@ -201,6 +260,15 @@ var UWorld = /** @class */ (function (_super) {
         // console.log("add actor num:",this.actors.length);
     };
     var UWorld_1;
+    __decorate([
+        XBase_1.xproperty(Array)
+    ], UWorld.prototype, "actors", void 0);
+    __decorate([
+        XBase_1.xproperty(Map)
+    ], UWorld.prototype, "pUserControllerMap", void 0);
+    __decorate([
+        XBase_1.xproperty(Map)
+    ], UWorld.prototype, "pControllerUserMap", void 0);
     UWorld = UWorld_1 = __decorate([
         XBase_1.xclass(UWorld_1)
     ], UWorld);

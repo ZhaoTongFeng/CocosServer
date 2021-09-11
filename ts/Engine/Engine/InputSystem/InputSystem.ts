@@ -1,30 +1,37 @@
-import AController from "../../Actor/Controller/Controller";
 import UObject from "../../Object";
 import { XBase, xclass } from "../ReflectSystem/XBase";
 import { uu, UVec2 } from "../UMath";
 import UWorld from "../World";
 
+
+
+export class TouchState {
+    delta: UVec2;
+    pos: UVec2;
+}
+
 @xclass(UInputSystem)
 export class UInputSystem extends UObject {
     world: UWorld = null;
-    controllers: Map<string, AController> = new Map();
+    
+    //触摸状态
+    isTouch: boolean = false;
+    isTouchMove: boolean = false;
 
-    register(controller: AController) {
-        this.controllers.set(controller.id, controller);
-    }
-    unRegister(controller: AController) {
-        this.controllers.delete(controller.id);
-    }
 
-    processNetInput(datas: object[]) {
-        datas.forEach(data => {
-            let id = data[0];
-            let controller = this.controllers.get(id);
-            if (controller) {
-                controller.receiveData(data[1]);
-            }
-        });
-    }
+    //屏幕点击操作
+    clickPos: UVec2 = uu.v2();
+
+    //虚拟摇杆输出
+    leftJoyDir: UVec2 = UVec2.ZERO();
+    leftJoyRate: number = 0;
+
+    rightJoyDir: UVec2 = UVec2.ZERO();
+    rightJoyRate: number = 0;
+
+    isPassFireButton = false;
+
+
 
 
     init(world: UWorld) {

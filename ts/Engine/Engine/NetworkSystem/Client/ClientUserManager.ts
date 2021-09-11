@@ -9,7 +9,9 @@ import ClientUser from "./ClientUser";
 
 @xclass(ClientUserManager)
 export default class ClientUserManager extends UserManager {
-    public locUser: ClientUser = null
+    
+    public id_loc: string = null
+
     isLogin: boolean = false;
 
     //服务端socket
@@ -34,7 +36,10 @@ export default class ClientUserManager extends UserManager {
         this.userIdMap.delete(id);
     }
 
-
+    //获取房间列表
+    public getList() {
+        this.ns.sendCmd(NetCmd.USER_LIST);
+    }
 
 
     //0.注册回调
@@ -60,25 +65,19 @@ export default class ClientUserManager extends UserManager {
 
     //注册
     register(id_user) {
-        if (this.locUser == null) {
-            this.locUser = this.add(id_user);
-        } else {
-            this.locUser.id_user = id_user
-        }
-
-        this.locUser.key_conn = this.key_conn;
+        this.id_loc = id_user
         this.login();
     }
+
     //3.登录
     //发送账号和密码
     public login() {
-        if (this.locUser) {
+        if (this.id_loc) {
             let out = {
-                id_user: this.locUser.id_user
+                id_user: this.id_loc
             }
             this.ns.sendCmd(NetCmd.LOGIN, out);
         }
-
     }
 
     //4.登录回调
@@ -89,12 +88,12 @@ export default class ClientUserManager extends UserManager {
         if (code == 0) {
             console.log("登录成功")
             this.isLogin = true;
-            console.log(this.locUser);
+            let user = this.add(this.id_loc);
+            user.mng = this;
+            user.key_conn = this.key_conn;
+            console.log(this.id_loc);
         } else {
             console.log("登录失败");
         }
-        this.onLogin();
     }
-
-
 }

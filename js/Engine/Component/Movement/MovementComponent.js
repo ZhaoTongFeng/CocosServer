@@ -61,11 +61,17 @@ var UMovementComponent = /** @class */ (function (_super) {
         this.direction.x = 0;
         this.direction.y = 0;
     };
-    UMovementComponent.prototype.init = function (obj) {
-        _super.prototype.init.call(this, obj);
-        if (obj instanceof Pawn_1.default) {
-            obj.setMovement(this);
+    UMovementComponent.prototype.onLoad = function (ac) {
+        _super.prototype.onLoad.call(this, ac);
+        if (ac instanceof Pawn_1.default) {
+            ac.setMovement(this);
         }
+    };
+    UMovementComponent.prototype.addMoveForce = function (value) {
+        this.force.addSelf(value.mul(this.max_force));
+    };
+    UMovementComponent.prototype.setMoveForce = function (value) {
+        this.force = value.mulSelf(this.max_force);
     };
     UMovementComponent.prototype.processInput = function (input) {
     };

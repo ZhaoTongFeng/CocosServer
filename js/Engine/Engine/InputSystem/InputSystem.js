@@ -24,34 +24,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UInputSystem = void 0;
+exports.UInputSystem = exports.TouchState = void 0;
 var Object_1 = __importDefault(require("../../Object"));
 var XBase_1 = require("../ReflectSystem/XBase");
+var UMath_1 = require("../UMath");
+var TouchState = /** @class */ (function () {
+    function TouchState() {
+    }
+    return TouchState;
+}());
+exports.TouchState = TouchState;
 var UInputSystem = /** @class */ (function (_super) {
     __extends(UInputSystem, _super);
     function UInputSystem() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.world = null;
-        _this.controllers = new Map();
+        //触摸状态
+        _this.isTouch = false;
+        _this.isTouchMove = false;
+        //屏幕点击操作
+        _this.clickPos = UMath_1.uu.v2();
+        //虚拟摇杆输出
+        _this.leftJoyDir = UMath_1.UVec2.ZERO();
+        _this.leftJoyRate = 0;
+        _this.rightJoyDir = UMath_1.UVec2.ZERO();
+        _this.rightJoyRate = 0;
+        _this.isPassFireButton = false;
         return _this;
     }
     UInputSystem_1 = UInputSystem;
-    UInputSystem.prototype.register = function (controller) {
-        this.controllers.set(controller.id, controller);
-    };
-    UInputSystem.prototype.unRegister = function (controller) {
-        this.controllers.delete(controller.id);
-    };
-    UInputSystem.prototype.processNetInput = function (datas) {
-        var _this = this;
-        datas.forEach(function (data) {
-            var id = data[0];
-            var controller = _this.controllers.get(id);
-            if (controller) {
-                controller.receiveData(data[1]);
-            }
-        });
-    };
     UInputSystem.prototype.init = function (world) {
         _super.prototype.init.call(this, world);
         this.world = world;

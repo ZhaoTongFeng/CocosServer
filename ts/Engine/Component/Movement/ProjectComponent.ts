@@ -1,4 +1,4 @@
-import { UInput } from "../../Engine/InputSystem/Input";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
 import { xclass } from "../../Engine/ReflectSystem/XBase";
 import { UMath, uu, UVec2 } from "../../Engine/UMath";
 import Movement from "./MovementComponent";
@@ -6,11 +6,6 @@ import Movement from "./MovementComponent";
 
 @xclass(UProjectComponent)
 export default class UProjectComponent extends Movement {
-    
-    public init(obj: any) {
-        super.init(obj);
-
-    }
 
     public update(dt: number) {
         //F=MA

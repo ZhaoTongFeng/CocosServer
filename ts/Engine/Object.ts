@@ -61,7 +61,7 @@ export class EvtBase extends XBase {
  * 可编写 网络同步与序列化等功能
  */
 @xclass(UObject)
-export default class UObject extends XBase {
+export default class UObject extends EvtBase {
 
     //任何东西都有一个ID
     static GLOBALID: number = 0;
@@ -69,6 +69,11 @@ export default class UObject extends XBase {
         let id = UObject.GLOBALID;
         UObject.GLOBALID++;
         return id;
+    }
+
+    //接收网络数据
+    receiveData(obj: Object) {
+
     }
 
     @xproperty(String)

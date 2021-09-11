@@ -1,6 +1,6 @@
 
-import { UInput } from "../../Engine/InputSystem/Input";
-import { xclass } from "../../Engine/ReflectSystem/XBase";
+import { UInputSystem } from "../../Engine/InputSystem/InputSystem";
+import { xclass, xproperty } from "../../Engine/ReflectSystem/XBase";
 import UGraphic from "../../Engine/UGraphic";
 import UWorld from "../../Engine/World";
 import AController from "./Controller";
@@ -10,12 +10,14 @@ import AController from "./Controller";
  */
  @xclass(APlayerController)
 export default class APlayerController extends AController{
+    @xproperty(String)
+    id_user:string = null;
+    
     init(world: UWorld) {
         super.init(world);
-
     }
 
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
 
     }
 

@@ -32,7 +32,7 @@ var ClientUserManager = /** @class */ (function (_super) {
     __extends(ClientUserManager, _super);
     function ClientUserManager() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.locUser = null;
+        _this.id_loc = null;
         _this.isLogin = false;
         //服务端socket
         _this.key_conn = "";
@@ -56,6 +56,10 @@ var ClientUserManager = /** @class */ (function (_super) {
     ClientUserManager.prototype.delete = function (id) {
         this.userIdMap.delete(id);
     };
+    //获取房间列表
+    ClientUserManager.prototype.getList = function () {
+        this.ns.sendCmd(NetCmd_1.NetCmd.USER_LIST);
+    };
     //0.注册回调
     ClientUserManager.prototype.init = function (ns) {
         _super.prototype.init.call(this, ns);
@@ -73,21 +77,15 @@ var ClientUserManager = /** @class */ (function (_super) {
     };
     //注册
     ClientUserManager.prototype.register = function (id_user) {
-        if (this.locUser == null) {
-            this.locUser = this.add(id_user);
-        }
-        else {
-            this.locUser.id_user = id_user;
-        }
-        this.locUser.key_conn = this.key_conn;
+        this.id_loc = id_user;
         this.login();
     };
     //3.登录
     //发送账号和密码
     ClientUserManager.prototype.login = function () {
-        if (this.locUser) {
+        if (this.id_loc) {
             var out = {
-                id_user: this.locUser.id_user
+                id_user: this.id_loc
             };
             this.ns.sendCmd(NetCmd_1.NetCmd.LOGIN, out);
         }
@@ -100,12 +98,14 @@ var ClientUserManager = /** @class */ (function (_super) {
         if (code == 0) {
             console.log("登录成功");
             this.isLogin = true;
-            console.log(this.locUser);
+            var user = this.add(this.id_loc);
+            user.mng = this;
+            user.key_conn = this.key_conn;
+            console.log(this.id_loc);
         }
         else {
             console.log("登录失败");
         }
-        this.onLogin();
     };
     var ClientUserManager_1;
     ClientUserManager = ClientUserManager_1 = __decorate([

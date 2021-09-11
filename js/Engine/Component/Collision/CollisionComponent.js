@@ -56,13 +56,16 @@ var UCollisionComponent = /** @class */ (function (_super) {
     };
     UCollisionComponent.prototype.init = function (obj) {
         _super.prototype.init.call(this, obj);
-        if (!obj) {
-            return;
+        //碰撞检测只在服务器
+        if (this.owner.world.isClient == false) {
+            this.owner.world.collisionSystem.insert(this);
         }
+    };
+    UCollisionComponent.prototype.onLoad = function (ac) {
+        _super.prototype.onLoad.call(this, ac);
         if (this.owner.getCollision() == null) {
             this.owner.setCollision(this);
         }
-        this.owner.world.collisionSystem.insert(this);
     };
     UCollisionComponent.prototype.onDestory = function () {
         this.owner.world.collisionSystem.delete(this);

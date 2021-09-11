@@ -1,6 +1,6 @@
 
 import UCameraComponent from "../Component/SceneComponent/CameraComponent";
-import { UInput } from "../Engine/InputSystem/Input";
+import { UInputSystem } from "../Engine/InputSystem/InputSystem";
 import { xclass } from "../Engine/ReflectSystem/XBase";
 import UGraphic from "../Engine/UGraphic";
 import UWorld from "../Engine/World";
@@ -32,7 +32,7 @@ export default class ACameraActor extends AActor {
     }
 
     //Override
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
         if (input.isTouchMove) {
             // console.log(input.clickPos.x, input.clickPos.y);
         }

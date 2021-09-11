@@ -33,15 +33,33 @@ var UDebugSystem = /** @class */ (function (_super) {
     function UDebugSystem() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.world = null;
+        //一个格子宽度
+        _this.gridWidth = 1500;
+        //列
+        _this.gridCol = 10;
+        //行
+        _this.gridRow = 10;
         return _this;
     }
     UDebugSystem_1 = UDebugSystem;
     UDebugSystem.prototype.debugAll = function (graphic) {
+        this.drawGrid(graphic);
+        // this.drawScreen(graphic);
+        this.world.actors.forEach(function (actor) { actor.drawDebug(graphic); });
+    };
+    UDebugSystem.prototype.drawGrid = function (graphic) {
+        var gridWidth = this.gridWidth;
+        var gridCol = this.gridCol;
+        var gridRow = this.gridRow;
+        for (var i = 0; i < gridRow; i++) {
+            for (var j = 0; j < gridCol; j++) {
+                graphic.drawRect(j * gridWidth, i * gridWidth, gridWidth, gridWidth, UMath_1.UColor.WHITE());
+            }
+        }
+    };
+    UDebugSystem.prototype.drawScreen = function (graphic) {
         var winSize = this.world.gameInstance.getWorldView().winSize;
         graphic.drawRect(winSize.x * -1, winSize.y * -1, winSize.x * 2, winSize.y * 2, UMath_1.UColor.BLUE());
-        this.world.actors.forEach(function (actor) {
-            actor.drawDebug(graphic);
-        });
     };
     UDebugSystem.prototype.init = function (world) {
         _super.prototype.init.call(this, world);

@@ -33,8 +33,10 @@ var Actor_1 = __importDefault(require("../Actor"));
 var AController = /** @class */ (function (_super) {
     __extends(AController, _super);
     function AController() {
+        /** 这个指针是中间手动设置的，所以需要跟随世界一起传输 */
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.pawn = null;
+        _this.id_pawn = "";
         return _this;
     }
     AController_1 = AController;
@@ -47,13 +49,13 @@ var AController = /** @class */ (function (_super) {
     };
     AController.prototype.sendData = function (obj) {
         var out = [this.id, obj];
-        this.world.gameInstance.sendGameData(out);
-    };
-    AController.prototype.receiveData = function (obj) {
+        this.world.gameInstance.sendGameData(out, this);
     };
     AController.prototype.init = function (world) {
         _super.prototype.init.call(this, world);
-        this.world.inputSystem.register(this);
+    };
+    AController.prototype.onLoad = function (world) {
+        _super.prototype.onLoad.call(this, world);
     };
     AController.prototype.processSelfInput = function (input) {
     };
@@ -62,7 +64,6 @@ var AController = /** @class */ (function (_super) {
     AController.prototype.drawDebugActor = function (graphic) {
     };
     AController.prototype.destory = function () {
-        this.world.inputSystem.unRegister(this);
         _super.prototype.destory.call(this);
     };
     AController.prototype.process = function (pawn) {
@@ -160,6 +161,9 @@ var AController = /** @class */ (function (_super) {
         }
     };
     var AController_1;
+    __decorate([
+        XBase_1.xproperty(String)
+    ], AController.prototype, "id_pawn", void 0);
     AController = AController_1 = __decorate([
         XBase_1.xclass(AController_1)
     ], AController);

@@ -45,19 +45,13 @@ var UInput = /** @class */ (function (_super) {
         _this.clickPos = UMath_1.uu.v2();
         //虚拟摇杆输出
         _this.leftJoyDir = UMath_1.UVec2.ZERO();
-        _this.rightJoyDir = UMath_1.UVec2.ZERO();
         _this.leftJoyRate = 0;
+        _this.rightJoyDir = UMath_1.UVec2.ZERO();
         _this.rightJoyRate = 0;
         return _this;
     }
     UInput_1 = UInput;
     UInput.prototype.Clear = function () {
-        if (this.leftJoyRate == 0) {
-            this.leftJoyDir = UMath_1.UVec2.ZERO();
-        }
-        if (this.rightJoyRate == 0) {
-            this.rightJoyDir = UMath_1.UVec2.ZERO();
-        }
         this.isTouchMove = false;
     };
     var UInput_1;

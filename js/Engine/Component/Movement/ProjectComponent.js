@@ -33,9 +33,6 @@ var UProjectComponent = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     UProjectComponent_1 = UProjectComponent;
-    UProjectComponent.prototype.init = function (obj) {
-        _super.prototype.init.call(this, obj);
-    };
     UProjectComponent.prototype.update = function (dt) {
         //F=MA
         this.acc.x += this.force.x / this.mg;

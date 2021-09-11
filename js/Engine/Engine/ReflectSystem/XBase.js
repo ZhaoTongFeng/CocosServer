@@ -10,8 +10,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XBase = exports.SerializeData = exports.XManager = exports.xStatusSync = exports.xclass = exports.xfunc = exports.xproperty = exports.xenum = exports.notify = void 0;
+exports.XBase = exports.SerializeData = exports.XManager = exports.xClient = exports.xServer = exports.NetClsType = exports.xStatusSync = exports.xclass = exports.xfunc = exports.xproperty = exports.xenum = exports.notify = void 0;
 function notify(params) {
     if (params === void 0) { params = null; }
     return function (target, name) {
@@ -87,6 +90,9 @@ function xproperty(type, params) {
         params["_propName_"] = name; //属性类型
         var clsName = target.constructor.name;
         XManager.Ins.addProp(clsName, name, params);
+        if (type == undefined) {
+            console.error("循环引用", clsName);
+        }
     };
 }
 exports.xproperty = xproperty;
@@ -147,7 +153,7 @@ exports.xclass = xclass;
  *
  * 序列化中，会遍历原型链，在任何类中都可以标识父类的属性进行同步，以避免修改引擎基类
  */
-function xStatusSync(type, params) {
+function xStatusSync(params) {
     return function (target, name) {
         var clsName = target.constructor.name;
         XManager.Ins.netStatusSync.set(clsName, params);
@@ -155,12 +161,48 @@ function xStatusSync(type, params) {
 }
 exports.xStatusSync = xStatusSync;
 /**
+ * 服务器客户端映射
+ */
+var NetClsType;
+(function (NetClsType) {
+    NetClsType[NetClsType["SERVER"] = 0] = "SERVER";
+    NetClsType[NetClsType["CLIENT"] = 1] = "CLIENT";
+})(NetClsType = exports.NetClsType || (exports.NetClsType = {}));
+function xServer(parentName) {
+    return function (target, name) {
+        var clsName = target.name;
+        var clsMap = XManager.Ins.parentMap;
+        if (!clsMap.has(parentName)) {
+            clsMap.set(parentName, new Map());
+        }
+        var map = clsMap.get(parentName);
+        map.set(NetClsType.SERVER, clsName);
+        XManager.Ins.childrenMap.set(clsName, parentName);
+    };
+}
+exports.xServer = xServer;
+function xClient(parentName) {
+    return function (target, name) {
+        var clsName = target.name;
+        var clsMap = XManager.Ins.parentMap;
+        if (!clsMap.has(parentName)) {
+            clsMap.set(parentName, new Map());
+        }
+        var map = clsMap.get(parentName);
+        map.set(NetClsType.CLIENT, clsName);
+        XManager.Ins.childrenMap.set(clsName, parentName);
+    };
+}
+exports.xClient = xClient;
+/**
  * 反射系统管理器
  */
 var XManager = /** @class */ (function () {
     function XManager() {
         this.propRegistRuncs = [];
         this.netStatusSync = new Map();
+        this.parentMap = new Map();
+        this.childrenMap = new Map();
         /**
          * 类名：编辑器标签
          * 1.序列化与反序列化
@@ -512,7 +554,12 @@ var XBase = /** @class */ (function () {
         }
         //否则注册到链表
         this["_id_"] = serializeData.result.length + "";
-        obj["_cls_"] = this.getClsName();
+        var clsName = this.getClsName();
+        //如果是子类，则转换到父类
+        if (XManager.Ins.childrenMap.has(clsName)) {
+            clsName = XManager.Ins.childrenMap.get(clsName);
+        }
+        obj["_cls_"] = clsName;
         serializeData.linkMap.set(this["_id_"], this);
         serializeData.result.push(obj);
         //遍历继承关系
@@ -581,12 +628,14 @@ var XBase = /** @class */ (function () {
                 //处理引用类型
                 return obj.toJSON(serializeData);
             }
-            else if (obj instanceof Array || obj instanceof Set) {
+            else if (obj instanceof Array) {
                 var childObj_1 = [];
                 obj.forEach(function (item) {
                     childObj_1.push(_this.__setPropertyToJson(item, serializeData));
                 });
                 return childObj_1;
+            }
+            else if (obj instanceof Set) {
             }
             else if (obj instanceof Map) {
                 var childObj_2 = [];
@@ -618,7 +667,18 @@ var XBase = /** @class */ (function () {
             serializeData.result = obj;
             serializeData.result.forEach(function (jsonObj) {
                 var _id_ = jsonObj["_id_"];
-                var _cls_ = jsonObj["_cls_"];
+                //如果是父类，则转换为，对应的子类
+                var clsName = jsonObj["_cls_"];
+                var map = XManager.Ins.parentMap.get(clsName);
+                if (map) {
+                    if (NetworkSystem_1.default.isServer) {
+                        clsName = map.get(NetClsType.SERVER);
+                    }
+                    else {
+                        clsName = map.get(NetClsType.CLIENT);
+                    }
+                }
+                var _cls_ = clsName;
                 var itemMeta = XManager.Ins.getClsMetas(_cls_);
                 var ins = null;
                 //先创建所有Instance
@@ -906,3 +966,4 @@ var XBase = /** @class */ (function () {
     return XBase;
 }());
 exports.XBase = XBase;
+var NetworkSystem_1 = __importDefault(require("../NetworkSystem/Share/NetworkSystem"));

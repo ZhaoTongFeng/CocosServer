@@ -8,7 +8,6 @@ import UCollisionComponent from "./CollisionComponent";
 
 @xclass(UBoxComponent)
 export default class UBoxComponent extends UCollisionComponent {
-    @xproperty(AABB)
     worldAabb: AABB = new AABB();
 
     unUse() {

@@ -38,10 +38,13 @@ var AActor = /** @class */ (function (_super) {
     __extends(AActor, _super);
     function AActor() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.world = null;
+        /** 特有数据，一般需要传输的类型 */
+        _this.components = [];
+        /** 标志位类型，按需使用装饰器 */
         _this.state = Enums_1.UpdateState.Peeding;
         _this.reComputeTransform = true;
-        _this.components = [];
+        /** 引用类型，不要使用装饰器进行修饰，在init中进行恢复 */
+        _this.world = null;
         _this.rootComponent = null;
         _this.sceneComponent = null;
         _this.collisionComponent = null;
@@ -65,10 +68,22 @@ var AActor = /** @class */ (function (_super) {
     };
     //Override
     //被创建时 立即调用
-    AActor.prototype.init = function (world) {
+    //建立引用
+    AActor.prototype.init = function (world, id) {
+        if (id === void 0) { id = -1; }
         _super.prototype.init.call(this, world);
         this.world = world;
-        this.world.addActor(this);
+        world.addActor(this);
+        if (id == -1) {
+            id = Number(this.world.GenerateNewId());
+        }
+        this.id = id + "";
+        this.onLoad(world);
+    };
+    //反序列化之后恢复引用，并注册到动态表中
+    AActor.prototype.onLoad = function (world) {
+        this.world = world;
+        this.world.actorSystem.registerObj(this);
     };
     //Override
     //真正被加入场景中调用
@@ -135,9 +150,12 @@ var AActor = /** @class */ (function (_super) {
     };
     //销毁
     AActor.prototype.destory = function () {
+        var _this = this;
         this.state = Enums_1.UpdateState.Dead;
+        this.world.actorSystem.unRegisterObj(this);
         this.components.forEach(function (comp) {
             comp.state = Enums_1.UpdateState.Dead;
+            _this.world.actorSystem.unRegisterObj(comp);
         });
     };
     //Override
@@ -153,7 +171,7 @@ var AActor = /** @class */ (function (_super) {
         if (comp != null && this.world.usePool) {
             comp.unUse();
             var clsName = comp.constructor.name;
-            var arr = this.world.componentPoos.get(clsName);
+            var arr = this.world.compPool.get(clsName);
             arr.push(comp);
         }
     };
@@ -260,15 +278,17 @@ var AActor = /** @class */ (function (_super) {
             this.reComputeTransform = true;
         }
     };
+    AActor.prototype.getCatAABB = function () {
+        if (!this.sceneComponent) {
+            return null;
+        }
+        else {
+            return this.sceneComponent.catAABB;
+        }
+    };
     var AActor_1;
     __decorate([
-        XBase_1.xproperty(Number)
-    ], AActor.prototype, "state", void 0);
-    __decorate([
-        XBase_1.xproperty(Boolean)
-    ], AActor.prototype, "reComputeTransform", void 0);
-    __decorate([
-        XBase_1.xproperty(XBase_1.XBase)
+        XBase_1.xproperty(Array)
     ], AActor.prototype, "components", void 0);
     AActor = AActor_1 = __decorate([
         XBase_1.xclass(AActor_1)

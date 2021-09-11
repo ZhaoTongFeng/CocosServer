@@ -1,5 +1,5 @@
 var ws = require("nodejs-websocket");
-var UNetworkSystem = require("./Engine/Engine/NetworkSystem/Server/NetworkSystem");
+var UNetworkSystem = require("./Engine/Engine/NetworkSystem/Server/ServerNetworkSystem");
 
 
 var server = new UNetworkSystem.default();

@@ -1,6 +1,6 @@
 import AActor from "../../../Engine/Actor/Actor";
 import APawn from "../../../Engine/Actor/Pawn/Pawn";
-import { UInput } from "../../../Engine/Engine/InputSystem/Input";
+import { UInputSystem } from "../../../Engine/Engine/InputSystem/InputSystem";
 import { xclass } from "../../../Engine/Engine/ReflectSystem/XBase";
 import UGraphic from "../../../Engine/Engine/UGraphic";
 import UWorld from "../../../Engine/Engine/World";
@@ -31,7 +31,7 @@ export default class ABall extends AActor {
     }
 
     //Override
-    protected processSelfInput(input: UInput) {
+    protected processSelfInput(input: UInputSystem) {
 
     }
     //Override

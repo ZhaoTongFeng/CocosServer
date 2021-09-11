@@ -1,7 +1,7 @@
 
 import AActor from "../Actor/Actor";
 import { UpdateState } from "../Engine/Enums";
-import { UInput } from "../Engine/InputSystem/Input";
+import { UInputSystem } from "../Engine/InputSystem/InputSystem";
 import { xclass, xproperty } from "../Engine/ReflectSystem/XBase";
 import UGraphic from "../Engine/UGraphic";
 import UObject from "../Object";
@@ -16,7 +16,6 @@ import UObject from "../Object";
 export default class UComponent extends UObject {
     public owner: AActor = null;
 
-    @xproperty(Number)
     state: UpdateState = UpdateState.Active;
 
     unUse() {
@@ -29,21 +28,34 @@ export default class UComponent extends UObject {
         this.owner = null;
     }
 
-    public init(obj: any) {
-        super.init(obj);
-        if (!obj) {
+    public init(ac: AActor, id = -1) {
+        super.init(ac);
+        if (!ac) {
             console.warn("actor can't be null");
             return;
         }
+        this.owner = ac;
+        this.owner.addComponent(this);
+        if (id == -1) {
+            id = Number(this.owner.world.GenerateNewId());
+        }
+        this.id = id + "";
 
-        this.owner = obj as AActor;
+        this.onLoad(ac);
+    }
+
+    public onLoad(ac: AActor) {
+        this.owner = ac
         if (this.owner.getRootComp() == null) {
             this.owner.setRootComp(this);
         }
-        this.owner.addComponent(this);
+        this.owner.world.actorSystem.registerObj(this);
     }
 
-    public processInput(input: UInput) {
+
+
+
+    public processInput(input: UInputSystem) {
 
     }
     public update(dt: number) {

@@ -69,10 +69,6 @@ var USpriteComponent = /** @class */ (function (_super) {
     USpriteComponent.prototype.unRegister = function () {
         this.owner.world.actorSystem.unRegisterSprite(this);
     };
-    //1.
-    USpriteComponent.prototype.init = function (data) {
-        _super.prototype.init.call(this, data);
-    };
     USpriteComponent.prototype.markTextureDirty = function () {
         this.needUpdateTexture = true;
     };
@@ -99,6 +95,9 @@ var USpriteComponent = /** @class */ (function (_super) {
         _super.prototype.destory.call(this);
     };
     var USpriteComponent_1;
+    __decorate([
+        XBase_1.xproperty(String)
+    ], USpriteComponent.prototype, "textureName", void 0);
     __decorate([
         XBase_1.xproperty(UMath_1.UColor)
     ], USpriteComponent.prototype, "_color", void 0);

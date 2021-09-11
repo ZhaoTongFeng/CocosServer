@@ -24,36 +24,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ConnectionStatus = void 0;
 var XBase_1 = require("../../ReflectSystem/XBase");
 var User_1 = __importDefault(require("../Share/User"));
-var ConnectionStatus;
-(function (ConnectionStatus) {
-    ConnectionStatus[ConnectionStatus["CONNECTING"] = 0] = "CONNECTING";
-    ConnectionStatus[ConnectionStatus["CONNECTED"] = 1] = "CONNECTED";
-    ConnectionStatus[ConnectionStatus["LOSE"] = 2] = "LOSE";
-})(ConnectionStatus = exports.ConnectionStatus || (exports.ConnectionStatus = {}));
 var ServerUser = /** @class */ (function (_super) {
     __extends(ServerUser, _super);
     function ServerUser() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         //socket 连接
         _this.conn = null;
-        //连接状态
-        _this.conState = ConnectionStatus.CONNECTING;
         return _this;
     }
     ServerUser_1 = ServerUser;
     ServerUser.prototype.sendCmd = function (cmd, obj) {
-        this.mng.ns.sendCmd(this.conn, cmd, obj);
-    };
-    ServerUser.prototype.onClose = function () {
+        var ns = this.mng.ns;
+        ns.sendCmd(this.conn, cmd, obj);
     };
     var ServerUser_1;
-    __decorate([
-        XBase_1.xproperty(Number)
-    ], ServerUser.prototype, "conState", void 0);
     ServerUser = ServerUser_1 = __decorate([
+        XBase_1.xServer("User"),
         XBase_1.xclass(ServerUser_1)
     ], ServerUser);
     return ServerUser;

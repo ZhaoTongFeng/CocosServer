@@ -33,7 +33,9 @@ var Controller_1 = __importDefault(require("./Controller"));
 var APlayerController = /** @class */ (function (_super) {
     __extends(APlayerController, _super);
     function APlayerController() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.id_user = null;
+        return _this;
     }
     APlayerController_1 = APlayerController;
     APlayerController.prototype.init = function (world) {
@@ -49,6 +51,9 @@ var APlayerController = /** @class */ (function (_super) {
         _super.prototype.destory.call(this);
     };
     var APlayerController_1;
+    __decorate([
+        XBase_1.xproperty(String)
+    ], APlayerController.prototype, "id_user", void 0);
     APlayerController = APlayerController_1 = __decorate([
         XBase_1.xclass(APlayerController_1)
     ], APlayerController);

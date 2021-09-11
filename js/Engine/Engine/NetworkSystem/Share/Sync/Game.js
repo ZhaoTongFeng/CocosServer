@@ -25,7 +25,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameStatus = void 0;
-var NetCmd_1 = require("../../Share/NetCmd");
 var XBase_1 = require("../../../ReflectSystem/XBase");
 var Manager_1 = __importDefault(require("../Manager"));
 /**
@@ -90,10 +89,6 @@ var Game = /** @class */ (function (_super) {
     //0.注册回调
     Game.prototype.init = function (ns) {
         _super.prototype.init.call(this, ns);
-        ns.register(NetCmd_1.NetCmd.ROOM_ADD, this.prePlay, this);
-        ns.register(NetCmd_1.NetCmd.ROOM_JOIN, this.startPlay, this);
-        ns.register(NetCmd_1.NetCmd.ROOM_EXIT, this.playing, this);
-        ns.register(NetCmd_1.NetCmd.ROOM_DEL, this.playing, this);
     };
     //准备阶段
     Game.prototype.prePlay = function () {

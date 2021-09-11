@@ -38,22 +38,90 @@ var USceneComponent = /** @class */ (function (_super) {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this._visiblity = Enums_1.Visiblity.Visible;
         _this._position = UMath_1.uu.v2();
+        _this._newPos = UMath_1.uu.v2();
+        _this._oldPos = UMath_1.uu.v2();
         _this._absPosition = UMath_1.uu.v2();
         _this._size = UMath_1.uu.v2(64, 64);
+        _this._newSize = UMath_1.uu.v2(64, 64);
         _this._scale = UMath_1.uu.v2(1, 1);
         _this._rotation = 0;
+        _this._newRot = 0;
+        _this._oldRot = 0;
+        _this.needSync = true;
         _this.transformDirty = true;
+        /** 相机剔除 */
+        //是否在相机返回内
+        _this.inCamera = false;
+        //所占空间大小
+        _this.catAABB = null;
         return _this;
     }
     USceneComponent_1 = USceneComponent;
-    USceneComponent.prototype.init = function (data) {
-        _super.prototype.init.call(this, data);
-        if (this.owner.getSceneComponent() == null) {
-            this.owner.setSceneComponent(this);
+    //服务器检查坐标的变化，以发送
+    USceneComponent.prototype.checkTransform = function () {
+        if (this.transformDirty && this.needSync) {
+            if (this._position.x != this._oldPos.x || this._position.y != this._oldPos.y || this._rotation != this._oldRot) {
+                var data = [Math.floor(this._position.x), Math.floor(this._position.y), Math.floor(this._rotation)];
+                this._oldPos.x = data[0];
+                this._position.x = data[0];
+                this._oldPos.y = data[1];
+                this._position.y = data[1];
+                this._oldRot = data[2];
+                this._rotation = data[2];
+                this.owner.world.gameInstance.sendGameData(data, this);
+            }
+            this.transformDirty = false;
+        }
+    };
+    //客户端接收到位移坐标
+    USceneComponent.prototype.receiveData = function (obj) {
+        var pos = UMath_1.uu.v2(obj[0], obj[1]);
+        var rot = obj[2];
+        this._oldPos = this._position.clone();
+        this._newPos = pos;
+        this._oldRot = this._rotation;
+        this._newRot = rot;
+    };
+    USceneComponent.prototype.lerpTransform = function () {
+        if (this.needSync) {
+            if (this.owner.world.gameInstance.timeFrame == 0) {
+                return;
+            }
+            var start = this._oldPos.clone();
+            var target = this._newPos;
+            var rate = this.owner.world.gameInstance.frameRate;
+            start.lerp(target, rate);
+            var begRot = this._oldRot;
+            var endRot = this._newRot;
+            // if (UMath.abs(begRot - endRot) > 180) {
+            //     endRot = UMath.abs(360 - endRot)
+            // }
+            var newRot = UMath_1.UMath.lerp(begRot, endRot, rate);
+            if (this.isRoot()) {
+                this.owner.setPosition(start);
+                this.owner.setRotation(newRot);
+            }
+            else {
+                this.setPosition(start);
+                this.setRotation(newRot);
+            }
+        }
+    };
+    USceneComponent.prototype.init = function (ac, id) {
+        if (id === void 0) { id = -1; }
+        _super.prototype.init.call(this, ac, id);
+    };
+    USceneComponent.prototype.onLoad = function (ac) {
+        _super.prototype.onLoad.call(this, ac);
+        if (this.owner.world.isClient && this.catAABB == null) {
+            this.catAABB = new UMath_1.AABB();
         }
         //客户端才需要注册SceneComponent，用于显示
         if (this.owner.world.isClient) {
             this.register();
+        }
+        if (this.owner.getSceneComponent() == null) {
+            this.owner.setSceneComponent(this);
         }
     };
     USceneComponent.prototype.register = function () {
@@ -75,6 +143,7 @@ var USceneComponent = /** @class */ (function (_super) {
         this._scale.x = 1;
         this._scale.y = 1;
         this._rotation = 0;
+        this.transformDirty = true;
     };
     USceneComponent.prototype.unRegister = function () {
         this.owner.world.actorSystem.unRegisterSceneComponent(this);
@@ -84,12 +153,23 @@ var USceneComponent = /** @class */ (function (_super) {
     };
     USceneComponent.prototype.update = function (dt) {
         _super.prototype.update.call(this, dt);
+        //服务器每帧和上一帧的数据进行比较，是否需要发送上一帧
+        if (!this.owner.world.isClient) {
+            var data = this.checkTransform();
+        }
+        else {
+            this.lerpTransform();
+        }
     };
     USceneComponent.prototype.drawDebug = function (graphic) {
         _super.prototype.drawDebug.call(this, graphic);
         // const pos = this.getPosition();
         // const size = this.getSize();
         // graphic.drawRect(pos.x-size.x/2, pos.y-size.y/2, size.x, size.y);
+        if (this.isRoot()) {
+            var ownAABB = this.owner.getCatAABB();
+            graphic.drawRect(ownAABB.min.x, ownAABB.min.y, this.owner.getSize().x, this.owner.getSize().y, UMath_1.UColor.BLUE());
+        }
     };
     USceneComponent.prototype.draw = function (graphic) {
     };
@@ -99,9 +179,28 @@ var USceneComponent = /** @class */ (function (_super) {
         }
         _super.prototype.onDestory.call(this);
     };
+    USceneComponent.prototype.computeCatAABB = function () {
+        //更新相机剔除AABB
+        var pos = null;
+        if (this.isRoot()) {
+            pos = this.owner.getPosition();
+        }
+        else {
+            pos = this.owner.getPosition().add(this._position);
+        }
+        var size = this._size;
+        var scale = this._scale;
+        this.catAABB.min.x = pos.x - size.x / 2 * scale.x;
+        this.catAABB.min.y = pos.y - size.y / 2 * scale.y;
+        this.catAABB.max.x = this.catAABB.min.x + size.x * scale.x;
+        this.catAABB.max.y = this.catAABB.min.y + size.y * scale.y;
+    };
     USceneComponent.prototype.onComputeTransfor = function () {
         this.visiblity = this._visiblity;
         this.transformDirty = true;
+        if (this.transformDirty && this.owner.world.isClient) {
+            this.computeCatAABB();
+        }
     };
     //Override
     USceneComponent.prototype.isMainScene = function () {
@@ -124,6 +223,7 @@ var USceneComponent = /** @class */ (function (_super) {
         return this._position;
     };
     USceneComponent.prototype.setPosition = function (pos) {
+        this.transformDirty = true;
         this._position = pos;
     };
     //世界坐标
@@ -140,18 +240,21 @@ var USceneComponent = /** @class */ (function (_super) {
         return this._size;
     };
     USceneComponent.prototype.setSize = function (value) {
+        this.transformDirty = true;
         this._size = value;
     };
     USceneComponent.prototype.getScale = function () {
         return this._scale;
     };
     USceneComponent.prototype.setScale = function (value) {
+        this.transformDirty = true;
         this._scale = value;
     };
     USceneComponent.prototype.getRotation = function () {
         return this._rotation;
     };
     USceneComponent.prototype.setRotation = function (angle) {
+        this.transformDirty = true;
         this._rotation = angle;
     };
     var USceneComponent_1;

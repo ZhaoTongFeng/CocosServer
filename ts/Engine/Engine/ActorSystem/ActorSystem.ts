@@ -11,10 +11,19 @@ import UWorld from "../World";
  */
 @xclass(UActorSystem)
 export default class UActorSystem extends UObject {
+    //组件和actor对象映射，主要用在状态更新
+    objMap: Map<string, UObject> = new Map();
+    registerObj(obj: UObject) {
+        this.objMap.set(obj.id, obj);
+    }
+    unRegisterObj(obj: UObject) {
+        this.objMap.delete(obj.id);
+    }
+
     sceneComponents: USceneComponent[] = [];
     registerSceneComponent(scene: USceneComponent) {
         this.sceneComponents.push(scene);
-        this.world.gameInstance.getWorldView().addSceneComponent(scene);
+        
     }
     unRegisterSceneComponent(scene: USceneComponent) {
         let index = this.sceneComponents.findIndex((one) => {
@@ -22,14 +31,14 @@ export default class UActorSystem extends UObject {
         })
         if (index > -1) {
             this.sceneComponents.splice(index, 1);
+            // this.world.gameInstance.getWorldView().removeSceneComponent(scene);
         }
-        this.world.gameInstance.getWorldView().removeSceneComponent(scene);
+
     }
 
     spriteComponents: USpriteComponent[] = [];
     registerSprite(scene: USpriteComponent) {
         this.spriteComponents.push(scene);
-        this.world.gameInstance.getWorldView().addSpriteComponent(scene);
     }
     unRegisterSprite(scene: USpriteComponent) {
         let index = this.spriteComponents.findIndex((one) => {
@@ -37,8 +46,17 @@ export default class UActorSystem extends UObject {
         })
         if (index > -1) {
             this.spriteComponents.splice(index, 1);
-            this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
+            // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
         }
+    }
+
+    registerAll(){
+        this.sceneComponents.forEach(comp=>{
+            // this.world.gameInstance.getWorldView().addSceneComponent(comp);
+        })
+        this.spriteComponents.forEach(comp => {
+            // this.world.gameInstance.getWorldView().addSpriteComponent(comp);
+        });
     }
 
 

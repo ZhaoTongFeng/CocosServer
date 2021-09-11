@@ -29,10 +29,7 @@ export default class Game extends Manager {
     //0.注册回调
     init(ns: NetworkSystem) {
         super.init(ns);
-        ns.register(NetCmd.ROOM_ADD, this.prePlay, this);
-        ns.register(NetCmd.ROOM_JOIN, this.startPlay, this);
-        ns.register(NetCmd.ROOM_EXIT, this.playing, this);
-        ns.register(NetCmd.ROOM_DEL, this.playing, this);
+
     }
 
 

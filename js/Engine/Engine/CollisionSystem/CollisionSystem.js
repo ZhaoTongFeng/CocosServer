@@ -176,7 +176,7 @@ var UCollisionSystem = /** @class */ (function (_super) {
         this.testAvgCount = this.testTotalCount / this.frameCount;
         console.warn("maxCount", this.maxCount, "Sort Count", this.sortCount, "Sort Rate", (this.sortCount / (this.collisions.length * this.collisions.length) * 100).toFixed(3), "Test Count", this.testCount, "TestRate", (this.testCount / (this.collisions.length * this.collisions.length) * 100).toFixed(3));
         console.warn("Cur", this.collisions.length, "Avg", this.avgCount.toFixed(0), "Sort Avg", this.sortAvgCount.toFixed(0), "Test Avg", this.testAvgCount.toFixed(0), "Actors", this.world.actors.length);
-        console.warn("ac pool", this.world.actorPool, "cp pool", this.world.componentPoos);
+        console.warn("ac pool", this.world.actorPool, "cp pool", this.world.compPool);
     };
     var UCollisionSystem_1;
     UCollisionSystem = UCollisionSystem_1 = __decorate([

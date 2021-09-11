@@ -8,6 +8,8 @@
  * 2.类型错误@xproperty(XXX)
  */
 
+
+
 export function notify(params: any = null): any {
     return function (target: any, name: string) {
         Object.defineProperty(target, name, {
@@ -72,6 +74,7 @@ export function xenum(name, e, params = null): any {
  * @param name 属性名字
  */
 export function xproperty<A extends any>(type: new () => A, params: any = null): any {
+
     return function (target: any, name: string): void {
         if (params == null) {
             params = {};
@@ -85,7 +88,10 @@ export function xproperty<A extends any>(type: new () => A, params: any = null):
         params["_propName_"] = name;//属性类型
 
         const clsName = target.constructor.name;
-        XManager.Ins.addProp(clsName, name, params)
+        XManager.Ins.addProp(clsName, name, params);
+        if(type==undefined){
+            console.error("循环引用",clsName)
+        }
     }
 }
 
@@ -154,22 +160,60 @@ export function xclass<A extends XBase>(type: new () => A, params: any = null): 
  * 
  * 序列化中，会遍历原型链，在任何类中都可以标识父类的属性进行同步，以避免修改引擎基类
  */
-export function xStatusSync<A extends any>(type: new () => A, params: string[]): any {
+export function xStatusSync<A extends any>(params: string[]): any {
     return function (target: any, name: string): void {
         const clsName = target.constructor.name;
         XManager.Ins.netStatusSync.set(clsName, params);
     }
 }
 
+/**
+ * 服务器客户端映射
+ */
+export enum NetClsType {
+    SERVER,
+    CLIENT
+}
 
+export function xServer(parentName: string): any {
+    return function (target: any, name: string): void {
+        const clsName = target.name;
+        let clsMap = XManager.Ins.parentMap
+        if (!clsMap.has(parentName)) {
+            clsMap.set(parentName, new Map());
+        }
+        let map = clsMap.get(parentName);
+        map.set(NetClsType.SERVER, clsName);
+        XManager.Ins.childrenMap.set(clsName, parentName);
+    }
+}
+
+export function xClient(parentName: string): any {
+    return function (target: any, name: string): void {
+        const clsName = target.name;
+        let clsMap = XManager.Ins.parentMap
+        if (!clsMap.has(parentName)) {
+            clsMap.set(parentName, new Map());
+        }
+        let map = clsMap.get(parentName);
+        map.set(NetClsType.CLIENT, clsName);
+        XManager.Ins.childrenMap.set(clsName, parentName);
+    }
+}
 
 /**
  * 反射系统管理器
  */
 export class XManager {
     static Ins: XManager = new XManager();
+
     propRegistRuncs = []
+
     public netStatusSync: Map<string, string[]> = new Map();
+
+    public parentMap: Map<string, Map<number, string>> = new Map();
+    public childrenMap: Map<string, string> = new Map();
+
     /**
      * 类名：编辑器标签
      * 1.序列化与反序列化
@@ -566,7 +610,14 @@ export class XBase {
         }
         //否则注册到链表
         this["_id_"] = serializeData.result.length + "";
-        obj["_cls_"] = this.getClsName();
+        let clsName = this.getClsName();
+
+        //如果是子类，则转换到父类
+        if (XManager.Ins.childrenMap.has(clsName)) {
+            clsName = XManager.Ins.childrenMap.get(clsName);
+        }
+
+        obj["_cls_"] = clsName
         serializeData.linkMap.set(this["_id_"], this);
         serializeData.result.push(obj);
 
@@ -638,12 +689,15 @@ export class XBase {
 
                 return obj.toJSON(serializeData);
             }
-            else if (obj instanceof Array || obj instanceof Set) {
+            else if (obj instanceof Array ) {
                 let childObj = [];
                 obj.forEach(item => {
                     childObj.push(this.__setPropertyToJson(item, serializeData));
                 });
                 return childObj;
+            }
+            else if(obj instanceof Set){
+                
             }
             else if (obj instanceof Map) {
                 let childObj = [];
@@ -678,7 +732,18 @@ export class XBase {
             serializeData.result.forEach(jsonObj => {
 
                 const _id_ = jsonObj["_id_"];
-                const _cls_ = jsonObj["_cls_"];
+                //如果是父类，则转换为，对应的子类
+                let clsName = jsonObj["_cls_"];
+                let map = XManager.Ins.parentMap.get(clsName);
+                if (map) {
+                    if (NetworkSystem.isServer) {
+                        clsName = map.get(NetClsType.SERVER);
+                    } else {
+                        clsName = map.get(NetClsType.CLIENT);
+                    }
+                }
+
+                const _cls_ = clsName
 
                 let itemMeta = XManager.Ins.getClsMetas(_cls_);
 
@@ -962,7 +1027,11 @@ export class XBase {
             return outObj;
         }
     }
+
+
+
 }
 
 
 
+import NetworkSystem from "../NetworkSystem/Share/NetworkSystem";

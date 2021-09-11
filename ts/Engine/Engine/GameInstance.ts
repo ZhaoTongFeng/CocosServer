@@ -1,15 +1,25 @@
 
 import UObject from "../Object";
-import UActorSystem from "./ActorSystem/ActorSystem";
 import { UAudioSystem } from "./AudioSystem/AudioSystem";
+import { GameState } from "./Enums";
 
-import { UInput } from "./InputSystem/Input";
+import { UInputSystem } from "./InputSystem/InputSystem";
 import { LevelSystem } from "./LevelSystem/LevelSystem";
-import UNetworkSystem from "./NetworkSystem/Client/ClientNetworkSystem";
+import NetworkSystem from "./NetworkSystem/Share/NetworkSystem";
+import Room from "./NetworkSystem/Share/Room";
 import { xclass } from "./ReflectSystem/XBase";
+import { XTestMain } from "./ReflectSystem/XTestMain";
 import UGraphic from "./UGraphic";
+import { UMath } from "./UMath";
 import UWorldView from "./UWorldView";
 import UWorld from "./World";
+
+//GameInstance层级数据封包
+export type InsGameData = {
+    id: string,//ID标识
+    data: object//数据内容
+}
+
 
 /**
  * 游戏实例 管理整个游戏生命周期
@@ -18,10 +28,126 @@ import UWorld from "./World";
  */
 @xclass(UGameInstance)
 export default class UGameInstance extends UObject {
+    /**
+     * 服务端客户端标识
+     * 在编写游戏逻辑时，可以选择将逻辑放到客户端或者服务端
+     */
+    private _isClient: boolean = false;
+    getIsClient() { return this._isClient; }
+    setIsClient(val: boolean) { this._isClient = val; }
+    room: Room = null;
+
+    private sendBuffer: InsGameData[] = [];
+    private receiveBuffer: InsGameData[] = [];
+
+    /** 发送方只管发 */
+    //先将发送数据存到缓存
+    public sendGameData(obj: object, target: UObject) {
+        let out = {
+            id: target.id,
+            data: obj
+        }
+        this.sendBuffer.push(out);
+    }
+
+    //通过ROOM，全部发送，并清空
+    private sendAllGameData() {
+        if (this.sendBuffer.length != 0) {
+            this.room.sendGameData(this.sendBuffer);
+            this.sendBuffer = [];
+        }
+    }
+
+
+    /** 接收方，根据是服务器还是客户端，分别进行处理，如果是服务端则收到的是输入，客户端收到的是输出 */
+    oldTick = 0;
+    curTick = 0;
+    timeFrame = 0;
+
+    //内插值计时器
+    frameTimer = 0;
+    frameRate = 0;
+
+    //只负责接受数据，至于数据怎么处理，由关卡里面去实现
+    public receiveGameData(obj, time) {
+
+        this.receiveBuffer = obj;
+
+        this.frameTimer = 0;
+        //计算出两次数据包的时间步长
+        this.curTick = time;
+        if (this.curTick != 0 && this.oldTick != 0) {
+            this.timeFrame = this.curTick - this.oldTick;
+        }
+        this.oldTick = this.curTick;
+
+        //服务器立即处理请求更新状态，而不是等到更新时再处理
+        if (!this._isClient) {
+            this.processSyncData();
+        }
+    }
+
+
+    //处理网络数据
+    private processSyncData() {
+        if (this.receiveBuffer.length != 0) {
+            // console.log(this.receiveBuffer);
+        }
+
+        this.receiveBuffer.forEach(buffer => {
+            //从哪儿来到哪儿去
+            let id = buffer.id;
+            let obj: UObject = this.world.actorSystem.objMap.get(id)
+            if (obj) {
+                obj.receiveData(buffer.data);
+
+            }
+        });
+        this.receiveBuffer = [];
+    }
+
+
+    //当前关卡 网络处理+逻辑处理+本地输入循环
+    private debugTimer = 0;
+    private debugDelay = 5;
+    public update(dt: number) {
+        if (this.world == null) { return; }
+        if (this.world.gameState != GameState.Playing) { return; }
+
+        this.debugTimer += dt;
+        if (this.debugTimer > this.debugDelay) {
+            this.debugTimer = 0;
+        }
+
+        if (this.sendBuffer.length != 0) {
+
+        }
+
+        this.frameTimer += dt * 1000;
+        this.frameRate = UMath.clamp01(this.frameTimer / this.timeFrame / 2);
+
+        this.deltaTime = dt;
+        this.passTime += dt;
+
+        //1.处理输入
+        if (this._isClient) {
+            this.processSyncData();
+        }
+
+        //2.用输入或状态更新世界，并且将本机的操作添加到发送队列
+        this.world.update(dt);
+
+        //3.发送输出
+        this.sendAllGameData();
+
+        this.passTime = 0;
+    }
+
+
 
     /** 共享系统 */
     //本地输入系统
-    public input: UInput = new UInput();
+    public input: UInputSystem = new UInputSystem();
 
     //音频系统
     public audio: UAudioSystem = null;
@@ -32,79 +158,17 @@ export default class UGameInstance extends UObject {
     /** 游戏同步系统 */
 
     /** 网络数据系统 */
-    public network: UNetworkSystem = null;
-
-
-    /**
-     * 服务端客户端标识
-     * 在编写游戏逻辑时，可以选择将逻辑放到客户端或者服务端
-     */
-    private _isClient: boolean = false;
-    getIsClient() { return this._isClient; }
-    setIsClient(val: boolean) { this._isClient = val; }
-
-
-
-
-    private sendBuffer: object[] = [];
-    private receiveBuffer: object[] = [];
-    private receiveBufferTemp: object[] = [];//防止在处理数据时，接收新数据
-    private receiveFlag: boolean = false;
-
-    //每一帧调用这个去发送，但不是立即发送，这结束之后才会被全部发送
-    public sendGameData(obj: Object | Array<Object>) {
-        this.sendBuffer.push(obj);
-    }
-
-    //只负责接受数据，至于数据怎么处理，由关卡里面去实现
-    public receiveGameData(obj) {
-        if (this.receiveFlag) {
-            //如果正在处理数据，则添加到临时容器
-            this.receiveBufferTemp.push(obj);
-        } else {
-            this.receiveBuffer.push(obj);
-        }
-    }
-
-    //全部发送，并清空
-    private sendAllGameData() {
-        if (this.sendBuffer.length != 0) {
-            this.network.sendAllGameInput(this.sendBuffer);
-            this.sendBuffer = [];
-        }
-    }
-
-    //处理所有网络输入
-    private startProcessSyncData() {
-        this.receiveFlag = true;
-        //上一帧的多个数据包
-        this.receiveBuffer.forEach(buffer => {
-            this.world.inputSystem.processNetInput(buffer as object[]);
-        });
-    }
-
-    //结束处理网络输入
-    //清空已处理数据 并交换未处理数据，等待下一帧处理
-    private endProcessSyncData() {
-        this.receiveBuffer = [];
-        this.receiveBuffer.concat(this.receiveBufferTemp);
-        this.receiveBufferTemp = [];
-        this.receiveFlag = false;
-    }
-
-    private processSyncData() {
-        this.startProcessSyncData();
-        this.endProcessSyncData();
-    }
-
-
+    public network: NetworkSystem = null;
 
 
     //当前游戏世界指针
     private view: UWorldView = null;
     private world: UWorld = null;
-    getWorld() { return this.world; }
-    getWorldView() { return this.view; }
+    getWorld(): UWorld { return this.world; }
+    getWorldView(): UWorldView { return this.view; }
+    setWorldView(view: UWorldView) {
+        this.view = view;
+    }
 
     //全局共享的时间步长
     public deltaTime: number = 0;
@@ -112,17 +176,13 @@ export default class UGameInstance extends UObject {
     //从游戏实例启动 到现在的时间 
     public passTime: number = 0;
 
-
-    fps: number = 60;
-    frameTime: number = 0;
-    frameTimer: number = 0;
-
     /** 关卡管理 */
     //打开一个关卡
     public openWorld(world: UWorld, data: any = null, view) {
-        this.frameTime = 1 / this.fps;
 
-        this.view = view;
+
+        // XTestMain();
+        // this.view = view;
         if (this.world != null) {
             console.warn("WARN: currentWorld not null,");
             this.closeWorld();
@@ -132,40 +192,7 @@ export default class UGameInstance extends UObject {
         this.world = world;
         this.world.gameInstance = this;
         this.world.init(data);
-
     }
-
-
-
-
-    //当前关卡 网络处理+逻辑处理+本地输入循环
-    public update(dt: number) {
-        this.deltaTime = dt;
-        this.passTime += dt;
-        //TODO 锁定逻辑针，不受到操作卡住逻辑。
-        this.frameTimer += dt;
-        if (this.frameTimer > this.frameTime) {
-            this.frameTimer = 0;
-
-            if (this.world != null) {
-
-                //1.处理网络输入
-                this.processSyncData();
-
-                //2.用输入或状态更新世界，并且将本机的操作添加到发送队列
-                this.world.update(dt);
-
-                //清除当前本地输入
-                this.input.Clear();
-
-                //3.发送当前帧输入
-                this.sendAllGameData();
-            }
-            this.passTime=0;
-        }
-
-    }
-
     //TODO 切换关卡
     public switchWorld(oldWorldData) {
 
@@ -179,6 +206,8 @@ export default class UGameInstance extends UObject {
 
     //调试关卡
     public drawDebug(graphic: UGraphic) {
-        this.world.debugSystem.debugAll(graphic);
+        if (this._isClient && this.world && this.world.debugSystem) {
+            this.world.debugSystem.debugAll(graphic);
+        }
     }
 }
