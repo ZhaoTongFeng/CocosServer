@@ -89,6 +89,17 @@ var ServerNetworkSystem = /** @class */ (function (_super) {
         }
         this.printInfo();
     };
+    ServerNetworkSystem.prototype.onReceiveBinary = function (conn, stream) {
+        var bufferView = new Uint8Array(stream);
+        console.log(bufferView);
+        var array = [1.1, 1.2, 1.3];
+        bufferView = new Uint8Array(array);
+        this.sendBinary(conn, bufferView);
+    };
+    ServerNetworkSystem.prototype.sendBinary = function (conn, buffer, callback) {
+        if (callback === void 0) { callback = null; }
+        conn["sendBinary"](buffer, callback);
+    };
     /************************************************
      * 指令 和 系统 注册
      ************************************************/

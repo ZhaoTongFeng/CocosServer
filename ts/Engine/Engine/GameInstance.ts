@@ -1,10 +1,13 @@
 
+import AActor from "../Actor/Actor";
 import UObject from "../Object";
 import { UAudioSystem } from "./AudioSystem/AudioSystem";
 import { GameState } from "./Enums";
 
 import { UInputSystem } from "./InputSystem/InputSystem";
 import { LevelSystem } from "./LevelSystem/LevelSystem";
+import ServerUser from "./NetworkSystem/Server/ServerUser";
+import { NetCmd } from "./NetworkSystem/Share/NetCmd";
 import NetworkSystem from "./NetworkSystem/Share/NetworkSystem";
 import Room from "./NetworkSystem/Share/Room";
 import { xclass } from "./ReflectSystem/XBase";
@@ -37,8 +40,107 @@ export default class UGameInstance extends UObject {
     setIsClient(val: boolean) { this._isClient = val; }
     room: Room = null;
 
+    //客户端发送队列只有操作
     private sendBuffer: InsGameData[] = [];
     private receiveBuffer: InsGameData[] = [];
+
+    //服务端发送数据 网格，Item是消息队列
+    //一个格子宽度
+    gridWidth = 750;
+    //列
+    gridCol = 10;
+    halfGridCol = this.gridCol / 2;
+    //行
+    gridRow = 10;
+    halfGridRow = this.gridRow / 2;
+
+
+    private sendBuffer2: InsGameData[][][] = [];
+    /** 关卡管理 */
+    initSendBuffer() {
+        let gridWidth = this.gridWidth
+        let gridCol = this.gridCol;
+        let gridRow = this.gridRow;
+        this.sendBuffer2 = [];
+        for (let i = 0; i < gridRow; i++) {
+            this.sendBuffer2[i] = []
+            for (let j = 0; j < gridCol; j++) {
+                this.sendBuffer2[i][j] = [];
+            }
+        }
+    }
+
+    cleanSendBuffer() {
+        let gridWidth = this.gridWidth
+        let gridCol = this.gridCol;
+        let gridRow = this.gridRow;
+
+        for (let i = 0; i < gridRow; i++) {
+            for (let j = 0; j < gridCol; j++) {
+                this.sendBuffer2[i][j] = [];
+            }
+        }
+    }
+
+    //以actor为单位，将数据添加到网格
+    public sendGameGridData(obj: object, target: UObject, actor: AActor) {
+        try {
+            let out = {
+                id: target.id,
+                data: obj
+            }
+            let gridx = actor.gridx;
+            let gridy = actor.gridy;
+            let grid = this.sendBuffer2[gridy][gridx];
+            grid.push(out);
+        } catch (error) {
+            console.log(error);
+        }
+
+    }
+
+    //根据每个玩家的位置，把9宫格的数据传出
+    public sendAllGridGameData() {
+        try {
+
+            let map = this.world.pUserControllerMap;
+            let users = this.world.users;
+            let gridCol = this.gridCol;
+            let gridRow = this.gridRow;
+            users.forEach(user => {
+                let con = map.get(user.id_user);
+                let ac = con.pawn;
+                let gridx = ac.gridx;
+                let gridy = ac.gridy;
+
+                let arr = [];
+                for (let m = -1; m <= 1; m++) {
+                    for (let n = -1; n <= 1; n++) {
+                        let tx = gridx + n;
+                        let ty = gridy + m;
+                        if (tx >= 0 && tx < gridCol && ty >= 0 && ty < gridRow) {
+                            let grid = this.sendBuffer2[ty][tx];
+                            if (grid.length != 0) {
+                                arr = arr.concat(grid);
+                            }
+                        }
+                    }
+                }
+
+                if (arr.length != 0) {
+                    let out = {
+                        data: arr,
+                        time: new Date().getTime()
+                    };
+                    (user as ServerUser).sendCmd(NetCmd.GAME_SEND_SERVER, out);
+                }
+            });
+            this.cleanSendBuffer();
+        } catch (error) {
+            console.log(error);
+        }
+
+    }
 
     /** 发送方只管发 */
     //先将发送数据存到缓存
@@ -119,9 +221,6 @@ export default class UGameInstance extends UObject {
             this.debugTimer = 0;
         }
 
-        if (this.sendBuffer.length != 0) {
-
-        }
 
         this.frameTimer += dt * 1000;
         this.frameRate = UMath.clamp01(this.frameTimer / this.timeFrame / 2);
@@ -138,7 +237,12 @@ export default class UGameInstance extends UObject {
         this.world.update(dt);
 
         //3.发送输出
-        this.sendAllGameData();
+        if (this._isClient) {
+            this.sendAllGameData();
+        } else {
+            this.sendAllGridGameData();
+        }
+
 
         this.passTime = 0;
     }
@@ -176,9 +280,11 @@ export default class UGameInstance extends UObject {
     //从游戏实例启动 到现在的时间 
     public passTime: number = 0;
 
-    /** 关卡管理 */
+
+
     //打开一个关卡
     public openWorld(world: UWorld, data: any = null, view) {
+
 
 
         // XTestMain();
@@ -187,6 +293,7 @@ export default class UGameInstance extends UObject {
             console.warn("WARN: currentWorld not null,");
             this.closeWorld();
         }
+        this.initSendBuffer();
         this.canEveryTick = true
         this.passTime = 0;
         this.world = world;

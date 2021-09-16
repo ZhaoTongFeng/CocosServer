@@ -34,7 +34,7 @@ var UDebugSystem = /** @class */ (function (_super) {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.world = null;
         //一个格子宽度
-        _this.gridWidth = 1500;
+        _this.gridWidth = 750;
         //列
         _this.gridCol = 10;
         //行
@@ -48,12 +48,46 @@ var UDebugSystem = /** @class */ (function (_super) {
         this.world.actors.forEach(function (actor) { actor.drawDebug(graphic); });
     };
     UDebugSystem.prototype.drawGrid = function (graphic) {
+        var userMng = this.world.gameInstance.network.userManager;
+        var con = this.world.pUserControllerMap.get(userMng.id_loc);
+        var pawn = null;
+        if (con) {
+            pawn = con.pawn;
+        }
         var gridWidth = this.gridWidth;
         var gridCol = this.gridCol;
         var gridRow = this.gridRow;
+        var offsetCol = gridCol / 2;
+        var offsetRow = gridRow / 2;
         for (var i = 0; i < gridRow; i++) {
             for (var j = 0; j < gridCol; j++) {
-                graphic.drawRect(j * gridWidth, i * gridWidth, gridWidth, gridWidth, UMath_1.UColor.WHITE());
+                if (pawn) {
+                    var pos = pawn.getPosition();
+                    var x = Math.floor(pos.x / gridWidth) + offsetCol;
+                    var y = Math.floor(pos.y / gridWidth) + offsetRow;
+                    if (x == j && y == i) {
+                        for (var m = -1; m <= 1; m++) {
+                            for (var n = -1; n <= 1; n++) {
+                                var tx = x + n;
+                                var ty = y + m;
+                                if (tx >= 0 && tx < gridCol && ty >= 0 && ty < gridRow) {
+                                    if (m == 0 && n == 0) {
+                                        graphic.drawRect((tx - offsetCol) * gridWidth, (ty - offsetRow) * gridWidth, gridWidth, gridWidth, UMath_1.UColor.WHITE(), UMath_1.UColor.RED(), 10);
+                                    }
+                                    else {
+                                        graphic.drawRect((tx - offsetCol) * gridWidth, (ty - offsetRow) * gridWidth, gridWidth, gridWidth, UMath_1.UColor.WHITE(), UMath_1.UColor.BLUE(), 10);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        graphic.drawRect((j - offsetCol) * gridWidth, (i - offsetRow) * gridWidth, gridWidth, gridWidth, UMath_1.UColor.WHITE(), UMath_1.UColor.BLACK(), 10);
+                    }
+                }
+                else {
+                    graphic.drawRect((j - offsetCol) * gridWidth, (i - offsetRow) * gridWidth, gridWidth, gridWidth, UMath_1.UColor.WHITE(), UMath_1.UColor.BLACK(), 10);
+                }
             }
         }
     };

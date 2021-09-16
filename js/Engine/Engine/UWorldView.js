@@ -76,14 +76,17 @@ var UWorldView = /** @class */ (function (_super) {
     UWorldView.prototype.removeSceneComponent = function (comp) { };
     UWorldView.prototype.addSpriteComponent = function (comp) { };
     UWorldView.prototype.removeSpriteComponent = function (comp) { };
+    UWorldView.prototype.addTextComponent = function (comp) { };
+    UWorldView.prototype.removeTextComponent = function (comp) { };
+    UWorldView.prototype.addCameraComponent = function (comp) { };
+    UWorldView.prototype.removeCameraComponent = function (comp) { };
     UWorldView.prototype.addUINode = function (comp) { };
     UWorldView.prototype.removeUINode = function (comp) { };
     UWorldView.prototype.onSceneCompSetVisible = function (comp) { };
     UWorldView.prototype.onSceneCompComputeTransfor = function (comp) { };
     UWorldView.prototype.onSpriteCompSetColor = function (comp) { };
     UWorldView.prototype.onDrawTexture = function (comp) { };
-    UWorldView.prototype.addCameraComponent = function (comp) { };
-    UWorldView.prototype.removeCameraComponent = function (comp) { };
+    UWorldView.prototype.onDrawText = function (comp) { };
     UWorldView.prototype.onGetSceneCameraProperty = function (comp) { };
     var UWorldView_1;
     UWorldView = UWorldView_1 = __decorate([

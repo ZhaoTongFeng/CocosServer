@@ -27,6 +27,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Object_1 = __importDefault(require("../Object"));
 var Enums_1 = require("./Enums");
 var InputSystem_1 = require("./InputSystem/InputSystem");
+var NetCmd_1 = require("./NetworkSystem/Share/NetCmd");
 var XBase_1 = require("./ReflectSystem/XBase");
 var UMath_1 = require("./UMath");
 /**
@@ -44,8 +45,19 @@ var UGameInstance = /** @class */ (function (_super) {
          */
         _this._isClient = false;
         _this.room = null;
+        //客户端发送队列只有操作
         _this.sendBuffer = [];
         _this.receiveBuffer = [];
+        //服务端发送数据 网格，Item是消息队列
+        //一个格子宽度
+        _this.gridWidth = 750;
+        //列
+        _this.gridCol = 10;
+        _this.halfGridCol = _this.gridCol / 2;
+        //行
+        _this.gridRow = 10;
+        _this.halfGridRow = _this.gridRow / 2;
+        _this.sendBuffer2 = [];
         /** 接收方，根据是服务器还是客户端，分别进行处理，如果是服务端则收到的是输入，客户端收到的是输出 */
         _this.oldTick = 0;
         _this.curTick = 0;
@@ -78,6 +90,85 @@ var UGameInstance = /** @class */ (function (_super) {
     UGameInstance_1 = UGameInstance;
     UGameInstance.prototype.getIsClient = function () { return this._isClient; };
     UGameInstance.prototype.setIsClient = function (val) { this._isClient = val; };
+    /** 关卡管理 */
+    UGameInstance.prototype.initSendBuffer = function () {
+        var gridWidth = this.gridWidth;
+        var gridCol = this.gridCol;
+        var gridRow = this.gridRow;
+        this.sendBuffer2 = [];
+        for (var i = 0; i < gridRow; i++) {
+            this.sendBuffer2[i] = [];
+            for (var j = 0; j < gridCol; j++) {
+                this.sendBuffer2[i][j] = [];
+            }
+        }
+    };
+    UGameInstance.prototype.cleanSendBuffer = function () {
+        var gridWidth = this.gridWidth;
+        var gridCol = this.gridCol;
+        var gridRow = this.gridRow;
+        for (var i = 0; i < gridRow; i++) {
+            for (var j = 0; j < gridCol; j++) {
+                this.sendBuffer2[i][j] = [];
+            }
+        }
+    };
+    //以actor为单位，将数据添加到网格
+    UGameInstance.prototype.sendGameGridData = function (obj, target, actor) {
+        try {
+            var out = {
+                id: target.id,
+                data: obj
+            };
+            var gridx = actor.gridx;
+            var gridy = actor.gridy;
+            var grid = this.sendBuffer2[gridy][gridx];
+            grid.push(out);
+        }
+        catch (error) {
+            console.log(error);
+        }
+    };
+    //根据每个玩家的位置，把9宫格的数据传出
+    UGameInstance.prototype.sendAllGridGameData = function () {
+        var _this = this;
+        try {
+            var map_1 = this.world.pUserControllerMap;
+            var users = this.world.users;
+            var gridCol_1 = this.gridCol;
+            var gridRow_1 = this.gridRow;
+            users.forEach(function (user) {
+                var con = map_1.get(user.id_user);
+                var ac = con.pawn;
+                var gridx = ac.gridx;
+                var gridy = ac.gridy;
+                var arr = [];
+                for (var m = -1; m <= 1; m++) {
+                    for (var n = -1; n <= 1; n++) {
+                        var tx = gridx + n;
+                        var ty = gridy + m;
+                        if (tx >= 0 && tx < gridCol_1 && ty >= 0 && ty < gridRow_1) {
+                            var grid = _this.sendBuffer2[ty][tx];
+                            if (grid.length != 0) {
+                                arr = arr.concat(grid);
+                            }
+                        }
+                    }
+                }
+                if (arr.length != 0) {
+                    var out = {
+                        data: arr,
+                        time: new Date().getTime()
+                    };
+                    user.sendCmd(NetCmd_1.NetCmd.GAME_SEND_SERVER, out);
+                }
+            });
+            this.cleanSendBuffer();
+        }
+        catch (error) {
+            console.log(error);
+        }
+    };
     /** 发送方只管发 */
     //先将发送数据存到缓存
     UGameInstance.prototype.sendGameData = function (obj, target) {
@@ -136,8 +227,6 @@ var UGameInstance = /** @class */ (function (_super) {
         if (this.debugTimer > this.debugDelay) {
             this.debugTimer = 0;
         }
-        if (this.sendBuffer.length != 0) {
-        }
         this.frameTimer += dt * 1000;
         this.frameRate = UMath_1.UMath.clamp01(this.frameTimer / this.timeFrame / 2);
         this.deltaTime = dt;
@@ -149,7 +238,12 @@ var UGameInstance = /** @class */ (function (_super) {
         //2.用输入或状态更新世界，并且将本机的操作添加到发送队列
         this.world.update(dt);
         //3.发送输出
-        this.sendAllGameData();
+        if (this._isClient) {
+            this.sendAllGameData();
+        }
+        else {
+            this.sendAllGridGameData();
+        }
         this.passTime = 0;
     };
     UGameInstance.prototype.getWorld = function () { return this.world; };
@@ -157,7 +251,6 @@ var UGameInstance = /** @class */ (function (_super) {
     UGameInstance.prototype.setWorldView = function (view) {
         this.view = view;
     };
-    /** 关卡管理 */
     //打开一个关卡
     UGameInstance.prototype.openWorld = function (world, data, view) {
         if (data === void 0) { data = null; }
@@ -167,6 +260,7 @@ var UGameInstance = /** @class */ (function (_super) {
             console.warn("WARN: currentWorld not null,");
             this.closeWorld();
         }
+        this.initSendBuffer();
         this.canEveryTick = true;
         this.passTime = 0;
         this.world = world;

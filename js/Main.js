@@ -12,6 +12,7 @@ server._broadcast = function broadcast(ws, msg) {
     })
 }
 
+
 server.sendText = function (conn, msg) {
     conn.sendText(msg);
 }
@@ -28,9 +29,18 @@ var ws = ws.createServer(function (conn) {
     })
 
     conn.on("binary", function (inStream) {
-
-        console.log("Connection inStream")
+        var data = Buffer.alloc(0)
+		// Read chunks of binary data and add to the buffer
+		inStream.on("readable", function () {
+		    var newData = inStream.read()
+		    if (newData)
+		        data = Buffer.concat([data, newData], data.length+newData.length)
+		})
+		inStream.on("end", function () {
+            server.onReceiveBinary(conn, data);
+		})
     })
+
     conn.on("pong", function (data) {
 
         console.log("Connection pong", data)

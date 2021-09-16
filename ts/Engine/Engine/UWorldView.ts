@@ -2,6 +2,7 @@
 import UCameraComponent from "../Component/SceneComponent/CameraComponent";
 import USceneComponent from "../Component/SceneComponent/SceneComponent";
 import USpriteComponent from "../Component/SceneComponent/SpriteComponent";
+import UTextComponent from "../Component/SceneComponent/TextComponent";
 import { Visiblity } from "./Enums";
 import UGameInstance from "./GameInstance";
 import ClientNetworkSystem from "./NetworkSystem/Client/ClientNetworkSystem";
@@ -57,19 +58,23 @@ export default class UWorldView extends XBase {
 
     addSceneComponent(comp: USceneComponent) { }
     removeSceneComponent(comp: USceneComponent) { }
+
     addSpriteComponent(comp: USpriteComponent) { }
     removeSpriteComponent(comp: USpriteComponent) { }
+
+    addTextComponent(comp: UTextComponent) { }
+    removeTextComponent(comp: UTextComponent) { }
+
+    addCameraComponent(comp: UCameraComponent) { }
+    removeCameraComponent(comp: UCameraComponent) { }
+
     addUINode(comp: any) { }
     removeUINode(comp: any) { }
 
     onSceneCompSetVisible(comp: USceneComponent) { }
     onSceneCompComputeTransfor(comp: USceneComponent) { }
-
     onSpriteCompSetColor(comp: USpriteComponent) { }
     onDrawTexture(comp: USpriteComponent) { }
-
-
-    addCameraComponent(comp: UCameraComponent) { }
-    removeCameraComponent(comp: UCameraComponent) { }
+    onDrawText(comp: UTextComponent) { }
     onGetSceneCameraProperty(comp: UCameraComponent) { }
 }

@@ -46,6 +46,7 @@ var UPlayerBattleComponent = /** @class */ (function (_super) {
     };
     //绘制血量：红色、护盾：蓝色、充能武器？：黄色（有可能不止一种武器）
     UPlayerBattleComponent.prototype.drawDebug = function (graphic) {
+        return;
         var width = 10;
         var height = this.owner.getSize().y * this.owner.getScale().y;
         var lineWidth = 3; //线条宽度

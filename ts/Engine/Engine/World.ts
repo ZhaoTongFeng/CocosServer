@@ -46,11 +46,9 @@ export default class UWorld extends UObject {
      */
     protected updateWorld(dt) { }
 
-
-
     /** 数据统计 */
     maxActorCount: number = 0;
-
+    
     /** 标志位 */
     isDebug: boolean = false;
     isUpdating: boolean = false;
@@ -58,12 +56,10 @@ export default class UWorld extends UObject {
     gameState: GameState = GameState.Paused;
     isClient: boolean = false;
 
-
-
-
     /** 主要数据 */
     @xproperty(Array)
     actors: AActor[] = [];
+
     //这个世界的自增ID
     private _generateID: number = 0;
     public GenerateNewId(): string {
@@ -98,14 +94,14 @@ export default class UWorld extends UObject {
      * 用户输入，流入成controller输入，controller输入流入World
      */
     @xproperty(Map)
-    protected pUserControllerMap: Map<string, APlayerController> = new Map();
+    pUserControllerMap: Map<string, APlayerController> = new Map();
 
     /**
      * controller到user的映射
      * 结算时，controller数据带上user.id_user，发送给所有用户
      */
     @xproperty(Map)
-    protected pControllerUserMap: Map<string, User> = new Map();
+    pControllerUserMap: Map<string, User> = new Map();
 
     /** 指针 */
     collisionSystem: UCollisionSystem = null;
@@ -195,10 +191,6 @@ export default class UWorld extends UObject {
 
         }
     }
-
-
-
-
 
     //在程序中生成Actor，所有actor的创建，必须通过这个注册
     spawn<A extends AActor>(c: new () => A): A {

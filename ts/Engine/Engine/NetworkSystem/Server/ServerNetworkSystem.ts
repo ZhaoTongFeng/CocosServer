@@ -54,7 +54,7 @@ export default class ServerNetworkSystem extends NetworkSystem {
     /************************************************
      * 接收
      ************************************************/
-    onReceive(conn: any, str: string) {
+    onReceive(conn: any, str) {
         let data = JSON.parse(str);
         let tuple = this.events.get(Number(data["opt"]));
         if (tuple) {
@@ -65,6 +65,21 @@ export default class ServerNetworkSystem extends NetworkSystem {
         }
         this.printInfo();
     }
+
+    onReceiveBinary(conn: any, stream) {
+        let bufferView = new Uint8Array(stream);
+        console.log(bufferView);
+
+        let array = [1.1, 1.2, 1.3];
+        bufferView = new Uint8Array(array);
+        this.sendBinary(conn, bufferView);
+    }
+
+    sendBinary(conn, buffer, callback = null) {
+        conn["sendBinary"](buffer, callback);
+    }
+
+
 
     /************************************************
      * 指令 和 系统 注册

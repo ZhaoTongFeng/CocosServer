@@ -48,6 +48,8 @@ var AActor = /** @class */ (function (_super) {
         _this.rootComponent = null;
         _this.sceneComponent = null;
         _this.collisionComponent = null;
+        _this.gridx = 0;
+        _this.gridy = 0;
         return _this;
     }
     AActor_1 = AActor;
@@ -108,6 +110,7 @@ var AActor = /** @class */ (function (_super) {
     };
     AActor.prototype.computeWorldTransform = function () {
         if (this.reComputeTransform) {
+            this.computeGridPos();
             this.reComputeTransform = false;
             this.components.forEach(function (comp) {
                 if (comp.state == Enums_1.UpdateState.Active) {
@@ -115,6 +118,20 @@ var AActor = /** @class */ (function (_super) {
                 }
             });
         }
+    };
+    //重新计算ac所在网格
+    AActor.prototype.computeGridPos = function () {
+        var gridWidth = this.world.gameInstance.gridWidth;
+        var gridCol = this.world.gameInstance.gridCol;
+        var gridRow = this.world.gameInstance.gridRow;
+        var halfGridCol = this.world.gameInstance.halfGridCol;
+        var halfGridRow = this.world.gameInstance.halfGridRow;
+        var pos = this.getPosition();
+        var x = Math.floor(pos.x / gridWidth) + halfGridCol;
+        var y = Math.floor(pos.y / gridWidth) + halfGridRow;
+        this.gridx = x;
+        this.gridy = y;
+        //console.log(this.gridx, this.gridy);
     };
     //更新
     AActor.prototype.update = function (dt) {
@@ -241,7 +258,6 @@ var AActor = /** @class */ (function (_super) {
         }
         else {
             this.sceneComponent.setPosition(pos);
-            this.reComputeTransform = true;
         }
     };
     AActor.prototype.getScale = function () {

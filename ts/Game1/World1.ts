@@ -4,6 +4,7 @@ import USphereComponent from "../Engine/Component/Collision/SphereComponent";
 import UCameraComponent from "../Engine/Component/SceneComponent/CameraComponent";
 import USpriteAnimationComponent from "../Engine/Component/SceneComponent/SpriteAnimationComponent";
 import USpriteComponent from "../Engine/Component/SceneComponent/SpriteComponent";
+import UTextComponent from "../Engine/Component/SceneComponent/TextComponent";
 import ClientUserManager from "../Engine/Engine/NetworkSystem/Client/ClientUserManager";
 import { xclass } from "../Engine/Engine/ReflectSystem/XBase";
 import { uu, UVec2 } from "../Engine/Engine/UMath";
@@ -89,6 +90,10 @@ export default class World1 extends UWorld {
             let spriteComp = ac.spawnComponent(USpriteComponent);
             spriteComp.setTexture("ship/character");
 
+            let textComp = ac.spawnComponent(UTextComponent);
+            textComp.setText(id_user+"");
+            textComp.setPosition(uu.v2(0,64));
+
             //更新
             ac.spawnComponent(UCharacterMovement);
             ac.spawnComponent(USphereComponent);
@@ -120,7 +125,8 @@ export default class World1 extends UWorld {
         let con = this.pUserControllerMap.get(userMng.id_loc);
         this.playerController = con;
         this.player = con.pawn;
-        this.player.spawnComponent(UCameraComponent);
+        let cameraComp = this.player.spawnComponent(UCameraComponent);
+        cameraComp.zoomRatio = 0.2;
         console.log("本地AC", con.id_user);
     }
 

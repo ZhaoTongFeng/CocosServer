@@ -100,8 +100,7 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
     /************************************************
      * 接收
      ************************************************/
-    ClientNetworkSystem.prototype.onReceive = function (e) {
-        var str = e.data;
+    ClientNetworkSystem.prototype.onReceive = function (str) {
         var obj = JSON.parse(str);
         var opt = Number(obj["opt"]);
         //发送回调
@@ -114,6 +113,10 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
         }
         //外部回调，外面用on注册
         this.emit(opt + "", obj);
+    };
+    ClientNetworkSystem.prototype.onReceiveBinary = function (bin) {
+        var bufferView = new Uint8Array(bin);
+        console.log(bufferView);
     };
     /************************************************
      * 指令 和 系统 注册
@@ -138,11 +141,17 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
         console.log("正在连接", this.url);
         this.conState = ConnectionStatus.CONNECTING;
         this.ws = new WebSocket(this.url);
+        this.ws.binaryType = "arraybuffer";
         this.ws.onopen = function (e) {
             _this.onConnected(e);
         };
         this.ws.onmessage = function (e) {
-            _this.onReceive(e);
+            if (e.data instanceof ArrayBuffer) {
+                _this.onReceiveBinary(e.data);
+            }
+            else {
+                _this.onReceive(e.data);
+            }
         };
         this.ws.onerror = function (e) {
             _this.onError(e);
@@ -153,6 +162,9 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
     };
     //连接成功，转发给UserManager
     ClientNetworkSystem.prototype.onConnected = function (e) {
+        var array = [1.1, 1.2, 1.3];
+        var bufferView = new Uint8Array(array);
+        this.ws.send(bufferView);
         this.conState = ConnectionStatus.CONNECTED;
         console.log("UNetworkSystem Opened");
         this.userManager.onConnected();

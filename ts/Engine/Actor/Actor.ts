@@ -1,18 +1,13 @@
 import UCollisionComponent from "../Component/Collision/CollisionComponent";
 import UComponent from "../Component/Component";
 import USceneComponent from "../Component/SceneComponent/SceneComponent";
-
 import { UpdateState } from "../Engine/Enums";
 import { UInputSystem } from "../Engine/InputSystem/InputSystem";
-import { XBase, xclass, xproperty } from "../Engine/ReflectSystem/XBase";
+import { xclass, xproperty } from "../Engine/ReflectSystem/XBase";
 import UGraphic from "../Engine/UGraphic";
 import { AABB, uu, UVec2 } from "../Engine/UMath";
 import UWorld from "../Engine/World";
 import UObject from "../Object";
-
-
-
-
 
 /**
  * 角色（演员）
@@ -36,7 +31,8 @@ export default class AActor extends UObject {
     private sceneComponent: USceneComponent = null;
     protected collisionComponent: UCollisionComponent = null;
 
-
+    gridx = 0;
+    gridy = 0;
 
     //Override
     public unUse() {
@@ -103,6 +99,7 @@ export default class AActor extends UObject {
 
     computeWorldTransform() {
         if (this.reComputeTransform) {
+            this.computeGridPos();
             this.reComputeTransform = false;
             this.components.forEach(comp => {
                 if (comp.state == UpdateState.Active) {
@@ -110,6 +107,21 @@ export default class AActor extends UObject {
                 }
             });
         }
+    }
+    //重新计算ac所在网格
+    computeGridPos() {
+        let gridWidth = this.world.gameInstance.gridWidth
+        let gridCol = this.world.gameInstance.gridCol;
+        let gridRow = this.world.gameInstance.gridRow;
+        let halfGridCol = this.world.gameInstance.halfGridCol;
+        let halfGridRow = this.world.gameInstance.halfGridRow;
+        let pos = this.getPosition();
+        let x = Math.floor(pos.x / gridWidth) + halfGridCol;
+        let y = Math.floor(pos.y / gridWidth) + halfGridRow;
+
+        this.gridx = x;
+        this.gridy = y;
+        //console.log(this.gridx, this.gridy);
     }
 
     //更新
@@ -250,7 +262,7 @@ export default class AActor extends UObject {
             return;
         } else {
             this.sceneComponent.setPosition(pos);
-            this.reComputeTransform = true;
+            
         }
     }
 

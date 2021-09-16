@@ -27,7 +27,7 @@ export default class UPlayerBattleComponent extends UBattleComponent {
 
     //绘制血量：红色、护盾：蓝色、充能武器？：黄色（有可能不止一种武器）
     public drawDebug(graphic: UGraphic) {
-
+        return;
         let width = 10;
         let height = this.owner.getSize().y * this.owner.getScale().y;
 

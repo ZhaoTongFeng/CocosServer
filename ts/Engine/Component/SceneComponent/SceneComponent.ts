@@ -52,7 +52,7 @@ export default class USceneComponent extends UComponent {
 
                 this._oldRot = data[2];
                 this._rotation = data[2];
-                this.owner.world.gameInstance.sendGameData(data, this);
+                this.owner.world.gameInstance.sendGameGridData(data, this,this.owner);
             }
             this.transformDirty = false
         }
@@ -245,8 +245,11 @@ export default class USceneComponent extends UComponent {
         return this._position;
     }
     public setPosition(pos: UVec2) {
-        this.transformDirty = true;
-        this._position = pos;
+        if(!pos.equals(this._position)){
+            this.owner.reComputeTransform = true;
+            this.transformDirty = true;
+            this._position = pos;
+        }
     }
 
     //世界坐标

@@ -36,7 +36,7 @@ export default class ClientNetworkSystem extends NetworkSystem {
     public conState: ConnectionStatus = ConnectionStatus.NO;
 
     public delay: number = 0;
-    
+
     // protected url = "wss://www.llag.net/game/id=123";
     protected url = "ws://localhost:52312";
     protected ws: WebSocket = null;
@@ -68,13 +68,13 @@ export default class ClientNetworkSystem extends NetworkSystem {
         }
     }
 
+
+
     /************************************************
      * 接收
      ************************************************/
 
-    protected onReceive(e) {
-
-        let str = e.data;
+    protected onReceive(str) {
         let obj = JSON.parse(str);
         let opt = Number(obj["opt"]);
 
@@ -89,6 +89,11 @@ export default class ClientNetworkSystem extends NetworkSystem {
         }
         //外部回调，外面用on注册
         this.emit(opt + "", obj);
+    }
+
+    onReceiveBinary(bin) {
+        let bufferView = new Uint8Array(bin);
+        console.log(bufferView);
     }
 
     /************************************************
@@ -116,11 +121,17 @@ export default class ClientNetworkSystem extends NetworkSystem {
         this.conState = ConnectionStatus.CONNECTING;
 
         this.ws = new WebSocket(this.url);
+        this.ws.binaryType = "arraybuffer";
         this.ws.onopen = (e) => {
+
             this.onConnected(e);
         };
         this.ws.onmessage = (e) => {
-            this.onReceive(e);
+            if (e.data instanceof ArrayBuffer) {
+                this.onReceiveBinary(e.data);
+            } else {
+                this.onReceive(e.data);
+            }
         }
         this.ws.onerror = (e) => {
             this.onError(e);
@@ -132,6 +143,10 @@ export default class ClientNetworkSystem extends NetworkSystem {
 
     //连接成功，转发给UserManager
     protected onConnected(e) {
+        let array = [1.1, 1.2, 1.3];
+        let bufferView = new Uint8Array(array);
+        this.ws.send(bufferView);
+
         this.conState = ConnectionStatus.CONNECTED;
         console.log("UNetworkSystem Opened");
         this.userManager.onConnected();

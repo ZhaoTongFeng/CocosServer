@@ -29,6 +29,7 @@ var SphereComponent_1 = __importDefault(require("../Engine/Component/Collision/S
 var CameraComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/CameraComponent"));
 var SpriteAnimationComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/SpriteAnimationComponent"));
 var SpriteComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/SpriteComponent"));
+var TextComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/TextComponent"));
 var XBase_1 = require("../Engine/Engine/ReflectSystem/XBase");
 var UMath_1 = require("../Engine/Engine/UMath");
 var World_1 = __importDefault(require("../Engine/Engine/World"));
@@ -106,6 +107,9 @@ var World1 = /** @class */ (function (_super) {
             //输出
             var spriteComp = ac.spawnComponent(SpriteComponent_1.default);
             spriteComp.setTexture("ship/character");
+            var textComp = ac.spawnComponent(TextComponent_1.default);
+            textComp.setText(id_user + "");
+            textComp.setPosition(UMath_1.uu.v2(0, 64));
             //更新
             ac.spawnComponent(CharacterMovement_1.default);
             ac.spawnComponent(SphereComponent_1.default);
@@ -132,7 +136,8 @@ var World1 = /** @class */ (function (_super) {
         var con = this.pUserControllerMap.get(userMng.id_loc);
         this.playerController = con;
         this.player = con.pawn;
-        this.player.spawnComponent(CameraComponent_1.default);
+        var cameraComp = this.player.spawnComponent(CameraComponent_1.default);
+        cameraComp.zoomRatio = 0.2;
         console.log("本地AC", con.id_user);
     };
     World1.prototype.initOtherActors = function () {

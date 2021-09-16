@@ -39,6 +39,7 @@ var UActorSystem = /** @class */ (function (_super) {
         _this.objMap = new Map();
         _this.sceneComponents = [];
         _this.spriteComponents = [];
+        _this.textComponents = [];
         _this.world = null;
         return _this;
     }
@@ -70,6 +71,18 @@ var UActorSystem = /** @class */ (function (_super) {
         });
         if (index > -1) {
             this.spriteComponents.splice(index, 1);
+            // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
+        }
+    };
+    UActorSystem.prototype.registerText = function (scene) {
+        this.textComponents.push(scene);
+    };
+    UActorSystem.prototype.unRegisterText = function (scene) {
+        var index = this.textComponents.findIndex(function (one) {
+            return one == scene;
+        });
+        if (index > -1) {
+            this.textComponents.splice(index, 1);
             // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
         }
     };

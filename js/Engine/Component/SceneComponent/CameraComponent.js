@@ -34,12 +34,15 @@ var SceneComponent_1 = __importDefault(require("./SceneComponent"));
 var UCameraComponent = /** @class */ (function (_super) {
     __extends(UCameraComponent, _super);
     function UCameraComponent() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        //摄像机缩放比率
+        _this._zoomRatio = 1;
+        return _this;
     }
     UCameraComponent_1 = UCameraComponent;
     Object.defineProperty(UCameraComponent.prototype, "zoomRatio", {
         get: function () {
-            this.owner.world.gameInstance.getWorldView().onGetSceneCameraProperty(this);
+            // this.owner.world.gameInstance.getWorldView().onGetSceneCameraProperty(this);
             return this._zoomRatio;
         },
         set: function (value) {

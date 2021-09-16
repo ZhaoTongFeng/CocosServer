@@ -1,5 +1,6 @@
 import USceneComponent from "../../Component/SceneComponent/SceneComponent";
 import USpriteComponent from "../../Component/SceneComponent/SpriteComponent";
+import UTextComponent from "../../Component/SceneComponent/TextComponent";
 import UObject from "../../Object";
 import { xclass } from "../ReflectSystem/XBase";
 import UWorld from "../World";
@@ -49,6 +50,20 @@ export default class UActorSystem extends UObject {
             // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
         }
     }
+    textComponents: UTextComponent[] = [];
+    registerText(scene: UTextComponent) {
+        this.textComponents.push(scene);
+    }
+    unRegisterText(scene: UTextComponent) {
+        let index = this.textComponents.findIndex((one) => {
+            return one == scene;
+        })
+        if (index > -1) {
+            this.textComponents.splice(index, 1);
+            // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
+        }
+    }
+
 
     registerAll(){
         this.sceneComponents.forEach(comp=>{

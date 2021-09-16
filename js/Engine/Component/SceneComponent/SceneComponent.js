@@ -68,7 +68,7 @@ var USceneComponent = /** @class */ (function (_super) {
                 this._position.y = data[1];
                 this._oldRot = data[2];
                 this._rotation = data[2];
-                this.owner.world.gameInstance.sendGameData(data, this);
+                this.owner.world.gameInstance.sendGameGridData(data, this, this.owner);
             }
             this.transformDirty = false;
         }
@@ -223,8 +223,11 @@ var USceneComponent = /** @class */ (function (_super) {
         return this._position;
     };
     USceneComponent.prototype.setPosition = function (pos) {
-        this.transformDirty = true;
-        this._position = pos;
+        if (!pos.equals(this._position)) {
+            this.owner.reComputeTransform = true;
+            this.transformDirty = true;
+            this._position = pos;
+        }
     };
     //世界坐标
     USceneComponent.prototype.setAbsPosition = function (value) {

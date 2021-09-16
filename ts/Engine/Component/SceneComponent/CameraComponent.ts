@@ -15,9 +15,9 @@ import USceneComponent from "./SceneComponent";
 export default class UCameraComponent extends USceneComponent {
 
     //摄像机缩放比率
-    private _zoomRatio: number;
+    private _zoomRatio: number = 1;
     public get zoomRatio(): number {
-        this.owner.world.gameInstance.getWorldView().onGetSceneCameraProperty(this);
+        // this.owner.world.gameInstance.getWorldView().onGetSceneCameraProperty(this);
         return this._zoomRatio;
     }
     public set zoomRatio(value: number) {
