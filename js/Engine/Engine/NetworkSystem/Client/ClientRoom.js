@@ -119,12 +119,20 @@ var ClientRoom = /** @class */ (function (_super) {
         // console.log(out);
         ns.sendCmd(NetCmd_1.NetCmd.GAME_SEND_SERVER, out);
     };
+    ClientRoom.prototype.sendBinaryGameData = function (view) {
+        var ns = this.mng.ns;
+        ns.sendBinary(view);
+    };
+    ;
     //6.2接收服务器的状态，更新本地状态
     ClientRoom.prototype.onReceiveGameData = function (obj) {
         var data = obj["data"];
         var time = obj["time"];
         this.gameInstance.receiveGameData(data, time);
         // console.log(data);
+    };
+    ClientRoom.prototype.onReceiveBinaryGameData = function (data) {
+        this.gameInstance.receiveBinaryGameData(data);
     };
     //5.3服务器收到了客户端发送的指令（不一定有这一步，除非变量被标记为完全可靠的）
     ClientRoom.prototype.onGameSendInput = function (obj) { };

@@ -24,24 +24,55 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.World1Protocol = void 0;
 var Pawn_1 = __importDefault(require("../Engine/Actor/Pawn/Pawn"));
 var SphereComponent_1 = __importDefault(require("../Engine/Component/Collision/SphereComponent"));
 var CameraComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/CameraComponent"));
 var SpriteAnimationComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/SpriteAnimationComponent"));
 var SpriteComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/SpriteComponent"));
 var TextComponent_1 = __importDefault(require("../Engine/Component/SceneComponent/TextComponent"));
+var Protocol_1 = require("../Engine/Engine/NetworkSystem/Share/Protocol");
 var XBase_1 = require("../Engine/Engine/ReflectSystem/XBase");
 var UMath_1 = require("../Engine/Engine/UMath");
 var World_1 = __importDefault(require("../Engine/Engine/World"));
 var BulletProject_1 = __importDefault(require("./Engine/Actor/BulletProject"));
 var ExplodeActor_1 = __importDefault(require("./Engine/Actor/ExplodeActor"));
-var CharacterMovement_1 = __importDefault(require("./Engine/Component/CharacterMovement"));
+var ShipEngine_1 = __importDefault(require("./Engine/Component/ShipEngine"));
+var ShipMovement_1 = __importDefault(require("./Engine/Component/ShipMovement"));
 var ShipShield_1 = __importDefault(require("./Engine/Component/ShipShield"));
 var ShipWeaponProject_1 = __importDefault(require("./Engine/Component/ShipWeaponProject"));
 var PlayerShipController_1 = __importDefault(require("./Engine/Controller/PlayerShipController"));
 var BattleComponent_1 = __importDefault(require("./Engine/Info/BattleComponent"));
 var PlayerBattleComponent_1 = __importDefault(require("./Engine/Info/PlayerBattleComponent"));
 var Ship_1 = __importDefault(require("./Engine/Pawn/Ship"));
+var World1Protocol = /** @class */ (function (_super) {
+    __extends(World1Protocol, _super);
+    function World1Protocol() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.viewBuffer0 = null;
+        _this.viewBuffer1 = null;
+        return _this;
+    }
+    World1Protocol.prototype.init = function () {
+        this.dataLength = 12;
+    };
+    World1Protocol.prototype.initView = function () {
+        this.viewBuffer0 = this.getInt32(this.headLength, 1);
+        this.viewBuffer1 = this.getInt32(this.headLength + 4, 2);
+    };
+    World1Protocol.prototype.setOpt = function (v) { this.viewBuffer0[0] = v; };
+    World1Protocol.prototype.getOpt = function () { return this.viewBuffer0[0]; };
+    //0 爆炸
+    World1Protocol.prototype.setX = function (v) { this.viewBuffer1[0] = v; };
+    World1Protocol.prototype.getX = function () { return this.viewBuffer1[0]; };
+    World1Protocol.prototype.setY = function (v) { this.viewBuffer1[1] = v; };
+    World1Protocol.prototype.getY = function () { return this.viewBuffer1[1]; };
+    //1 删除AC
+    World1Protocol.prototype.setId = function (v) { this.viewBuffer1[0] = v; };
+    World1Protocol.prototype.getId = function () { return this.viewBuffer1[0]; };
+    return World1Protocol;
+}(Protocol_1.Protocol));
+exports.World1Protocol = World1Protocol;
 //游戏关卡一
 var World1 = /** @class */ (function (_super) {
     __extends(World1, _super);
@@ -53,10 +84,9 @@ var World1 = /** @class */ (function (_super) {
         var _this = this;
         if (levelData === void 0) { levelData = null; }
         _super.prototype.init.call(this, levelData);
-        this.isDebug = true;
+        this.isDebug = false;
         if (this.isClient) {
             SpriteAnimationComponent_1.default.RegisterAllAnimation();
-            console.log("注册所有动画序列名称");
             //客户端恢复关卡数据
             this.fromJSON(levelData);
             this.actors.forEach(function (ac) {
@@ -65,7 +95,6 @@ var World1 = /** @class */ (function (_super) {
                     comp.onLoad(ac);
                 });
             });
-            this.actorSystem.registerAll();
             this.pUserControllerMap.forEach(function (con, id_user) {
                 con.process(_this.actorSystem.objMap.get(con.id_pawn));
             });
@@ -79,9 +108,14 @@ var World1 = /** @class */ (function (_super) {
         }
     };
     World1.prototype.updateWorld = function (dt) {
-        if (!this.isClient) {
-            // this.checkCollections();
-        }
+        this.checkCollections();
+        // if (this.gameInstance.bStandAlone) {
+        //     this.checkCollections();
+        // } else {
+        //     if (!this.isClient) {
+        //         this.checkCollections();
+        //     }
+        // }
     };
     World1.prototype.initPlayerControllers = function () {
         var _this = this;
@@ -111,7 +145,8 @@ var World1 = /** @class */ (function (_super) {
             textComp.setText(id_user + "");
             textComp.setPosition(UMath_1.uu.v2(0, 64));
             //更新
-            ac.spawnComponent(CharacterMovement_1.default);
+            ac.spawnComponent(ShipMovement_1.default);
+            // ac.spawnComponent(ShipMovement2);
             ac.spawnComponent(SphereComponent_1.default);
             //战斗属性
             var battle = ac.spawnComponent(PlayerBattleComponent_1.default);
@@ -121,6 +156,7 @@ var World1 = /** @class */ (function (_super) {
             var weapon2 = ac.spawnComponent(ShipWeaponProject_1.default);
             weapon2.setItemPosition(0, 1);
             ac.addItem(weapon2);
+            var engine = ac.spawnComponent(ShipEngine_1.default);
             //设置位置
             ac.setPosition(UMath_1.uu.v2(i * 200, 0));
             i++;
@@ -137,7 +173,7 @@ var World1 = /** @class */ (function (_super) {
         this.playerController = con;
         this.player = con.pawn;
         var cameraComp = this.player.spawnComponent(CameraComponent_1.default);
-        cameraComp.zoomRatio = 0.2;
+        // cameraComp.zoomRatio = 0.2;
         console.log("本地AC", con.id_user);
     };
     World1.prototype.initOtherActors = function () {
@@ -176,7 +212,7 @@ var World1 = /** @class */ (function (_super) {
             var actor1 = a.owner;
             var actor2 = b.owner;
             if (actor1 instanceof Pawn_1.default && actor2 instanceof Pawn_1.default) {
-                // this.onPawnCollected(actor1, actor2);
+                _this.onPawnCollected(actor1, actor2);
             }
             else if (actor1 instanceof BulletProject_1.default && actor2 instanceof BulletProject_1.default) {
                 _this.onBulletCollected(actor1, actor2);
@@ -211,9 +247,23 @@ var World1 = /** @class */ (function (_super) {
             }
             // //爆炸动画
             var pos = actor1.getPosition().add(actor2.getPosition()).mul(0.5);
-            this.spawnExplode(pos);
+            if (this.gameInstance.bStandAlone) {
+                this.spawnExplode(pos);
+            }
+            else {
+                if (this.isClient) {
+                    this.spawnExplode(pos);
+                }
+                else {
+                    // this.RPC_SpawnExplode(pos);
+                }
+            }
             actor2.destory();
             actor1.destory();
+            // if (this.gameInstance.bStandAlone == false) {
+            //     this.RPC_RemoveActor(actor1);
+            //     this.RPC_RemoveActor(actor2);
+            // }
         }
     };
     //球打到敌人
@@ -223,14 +273,66 @@ var World1 = /** @class */ (function (_super) {
             // actor2.getMovement().velocity = dir.mul(1000);
             // let comp = actor2.spawnComponent(UExplodeComponent);
             // comp.offset = actor1.getPosition().clone();
-            this.spawnExplode(actor1.getPosition());
-            if (actor2 instanceof Ship_1.default) {
-                var shield = actor2.getShield();
-                if (shield) {
-                    shield.onHit();
+            //如果是单机模式，则直接生成爆炸特效，否则将爆炸信息发送给客户端调用
+            var pos = actor1.getPosition();
+            if (this.gameInstance.bStandAlone) {
+                this.spawnExplode(pos);
+                if (actor2 instanceof Ship_1.default) {
+                    var shield = actor2.getShield();
+                    if (shield) {
+                        shield.onHit();
+                    }
+                }
+                actor1.destory();
+            }
+            else {
+                if (this.isClient) {
+                    this.spawnExplode(pos);
+                }
+                else {
+                    // this.RPC_SpawnExplode(pos);
+                    if (actor2 instanceof Ship_1.default) {
+                        var shield = actor2.getShield();
+                        if (shield) {
+                            shield.onHit();
+                        }
+                    }
                 }
             }
             actor1.destory();
+            // if (this.gameInstance.bStandAlone == false) {
+            //     this.RPC_RemoveActor(actor1);
+            // }
+        }
+    };
+    World1.prototype.getProtocol = function (id, sys) { return new World1Protocol(id, sys); };
+    World1.prototype.RPC_SpawnExplode = function (pos) {
+        var protocol = this.getProtocol(this.id, this.gameInstance.protocolSystem);
+        protocol.requestBufferView();
+        protocol.setOpt(0);
+        protocol.setX(pos.x);
+        protocol.setY(pos.y);
+    };
+    World1.prototype.RPC_RemoveActor = function (actor) {
+        var protocol = this.getProtocol(this.id, this.gameInstance.protocolSystem);
+        protocol.requestBufferView();
+        protocol.setOpt(1);
+        protocol.setId(actor.id);
+        console.log("应该被删除", actor.id);
+    };
+    World1.prototype.receiveBinary = function (protocol) {
+        var opt = protocol.getOpt();
+        if (opt == 0) {
+            var pos = UMath_1.uu.v2(protocol.getX(), protocol.getY());
+            this.spawnExplode(pos);
+        }
+        else if (opt == 1) {
+            var id = protocol.getId();
+            var ac = this.actorSystem.objMap.get(id + "");
+            if (ac) {
+                ac.destory();
+                console.log(id);
+            }
         }
     };
     World1.prototype.spawnExplode = function (pos) {

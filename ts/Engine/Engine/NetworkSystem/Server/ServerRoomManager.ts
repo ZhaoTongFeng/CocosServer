@@ -244,6 +244,19 @@ export default class ServerRoomManager extends RoomManager {
         room.onReceiveGameData(user,obj);
     }
 
+    protected onReceiveBinaryGameData(key, conn, obj) { 
+        let userMng = this.ns.userManager as ServerUserManager;
+        let user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj)
+            return;
+        }
+        let id_room = "abc";
+        let room = this.getRoomById(id_room) as ServerRoom;
+        room.onReceiveBinaryGameData(user,obj);
+    }
+
+
 
 
     /**

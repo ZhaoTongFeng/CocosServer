@@ -16,6 +16,10 @@ let list = [
     `rmdir "./ts/Engine/Engine/Cocos" /S /Q `,
 
     `del /a /f /s /q  "./*.meta"`,
+    
+    `rmdir "D:/PHPServer/gameserver/js" /S /Q `,
+    `mkdir "D:/PHPServer/gameserver/js"`,
+    `xcopy  "./js" "D:/PHPServer/gameserver/js" /S /E /Y`,
 ]
 list.forEach(str => {
     cmd.runSync(str);

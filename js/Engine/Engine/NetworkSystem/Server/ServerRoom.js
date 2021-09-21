@@ -51,6 +51,20 @@ var ServerRoom = /** @class */ (function (_super) {
             console.log(error);
         }
     };
+    ServerRoom.prototype.broadcastBinary = function (view) {
+        var _this = this;
+        try {
+            this.users.forEach(function (id_user) {
+                var user = _this.mng.getUserById(id_user);
+                if (user) {
+                    user.sendBinary(view);
+                }
+            });
+        }
+        catch (error) {
+            console.log(error);
+        }
+    };
     ServerRoom.prototype.onAdd = function (user) {
         //记录房主信息，并直接将房主添加到房间
         this.owner = user.id_user;
@@ -233,12 +247,17 @@ var ServerRoom = /** @class */ (function (_super) {
         };
         this.broadcast(NetCmd_1.NetCmd.GAME_SEND_SERVER, out);
     };
+    ServerRoom.prototype.sendBinaryGameData = function (view) {
+        this.broadcastBinary(view);
+    };
     //6.3服务器收到客户端输入，更新Controller状态
     ServerRoom.prototype.onReceiveGameData = function (user, obj) {
         var data = obj["data"];
         var time = obj["time"];
         this.gameInstance.receiveGameData(data, time);
-        // console.log(data);
+    };
+    ServerRoom.prototype.onReceiveBinaryGameData = function (user, data) {
+        this.gameInstance.receiveBinaryGameData(data);
     };
     /**
      * 结算阶段

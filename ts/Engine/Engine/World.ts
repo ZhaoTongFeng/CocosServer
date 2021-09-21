@@ -1,3 +1,4 @@
+import ABulletProject from "../../Game1/Engine/Actor/BulletProject";
 import AActor from "../Actor/Actor";
 import APlayerController from "../Actor/Controller/PlayerController";
 import AGameModeBase from "../Actor/Info/GameModeBase";
@@ -48,7 +49,7 @@ export default class UWorld extends UObject {
 
     /** 数据统计 */
     maxActorCount: number = 0;
-    
+
     /** 标志位 */
     isDebug: boolean = false;
     isUpdating: boolean = false;
@@ -60,19 +61,19 @@ export default class UWorld extends UObject {
     @xproperty(Array)
     actors: AActor[] = [];
 
-    //这个世界的自增ID
+    /**
+     * 世界的自增ID
+     * 虽然在UObject实例化时已经设置，但是客户端和服务端的ID是完全不同的
+     * 所以针对每一个World，都必须有一个局部的ID，并且这个ID，完全来自于服务端，因为服务端必须有所有object的ID，才能在调用时找到。
+     */
     private _generateID: number = 0;
     public GenerateNewId(): string {
         let id = this._generateID;
         this._generateID++;
         return id + "";
     }
-    getCurrentGenID() {
-        return this._generateID;
-    }
-    setCurrentGenID(id: number) {
-        this._generateID = id;
-    }
+    getCurrentGenID() { return this._generateID; }
+    setCurrentGenID(id: number) { this._generateID = id; }
 
     private _users: User[] = [];
     public get users(): User[] {
@@ -153,15 +154,20 @@ export default class UWorld extends UObject {
     //帧循环，被Instance初始化之后，会被放到CC的Update下面
     public update(dt) {
         if (this.gameState == GameState.Playing) {
+            //清空移动状态，再接收输入
+            this.actorSystem.movementComps.forEach((comp) => { comp.clear(); })
+
+
             //本地输入
             this.actors.forEach(ac => {
                 ac.processInput(this.gameInstance.input);
             });
 
-            //TODO 如果是单机模式则直接在这里消耗指令
 
-            //更新
+            //基本更新 更新Actor
             this.isUpdating = true;
+
+
             this.actors.forEach(actor => {
                 if (actor.canEveryTick) {
                     actor.update(dt)
@@ -169,6 +175,7 @@ export default class UWorld extends UObject {
             });
             this.isUpdating = false;
 
+            //转发到World实例，执行更复杂的系统
             this.updateWorld(dt);
 
             //添加这一帧添加的AC
@@ -178,24 +185,24 @@ export default class UWorld extends UObject {
             }
             this.actors_peending = [];
 
-
-
             //删除这一帧删除的AC
             for (let i = this.actors.length - 1; i >= 0; i--) {
                 if (this.actors[i].state == UpdateState.Dead) {
+                    if(this.actors[i] instanceof ABulletProject){
+                        console.log("被删除",this.actors[i].id)
+                    }
+
                     this.destoryActor(this.actors[i]);
                     this.actors.splice(i, 1);
+                    
                 }
             }
-
-
         }
     }
 
     //在程序中生成Actor，所有actor的创建，必须通过这个注册
     spawn<A extends AActor>(c: new () => A): A {
         let actor = null;
-
         if (this.usePool) {
             let clsName = c.name;
             if (this.actorPool.has(clsName) == false) {
@@ -210,13 +217,10 @@ export default class UWorld extends UObject {
                 actor.reUse();
             }
         }
-
-
         if (actor == null) {
             actor = new c();
         }
         actor.init(this);
-
         return actor;
     }
 
@@ -252,21 +256,14 @@ export default class UWorld extends UObject {
 
             }
         }
-
         if (comp == null) {
             comp = new c();
         }
         comp.init(actor);
-
-
         return comp;
     }
 
-    /**
-     * 增加Actor
-     * 需要考虑在更新过程中添加的情况，而删除Actor，不需要考虑，因为全部都是这一帧结束后删除
-     * @param actor 
-     */
+    //增加Actor 需要考虑在更新过程中添加的情况，而删除Actor，不需要考虑，因为全部都是这一帧结束后删除
     public addActor(actor: AActor) {
         if (this.isUpdating) {
             this.actors_peending.push(actor);

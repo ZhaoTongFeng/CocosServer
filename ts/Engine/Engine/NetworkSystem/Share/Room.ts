@@ -38,12 +38,13 @@ export default class Room extends XBase {
     handle_game: number = -1;
     fps: number = 60;
     clientFps = 60;
-    serverFps = 15;
+    serverFps = 10;
     frameTime: number = 0;
     frameTimer: number = 0;
 
     time_cur: number = 0;
     time_last: number = 0;
+
 
     /**
      * 开始更新游戏
@@ -60,17 +61,19 @@ export default class Room extends XBase {
         world.gameState = GameState.Playing;
 
         this.frameTime = 1 / this.fps;
-        this.time_cur = this.mng.ns.getCurrentTime();
-        this.time_last = this.mng.ns.getCurrentTime();
+        this.time_cur = this.time_last = this.mng.ns.getCurrentTime();
+
 
         this.handle_game = setInterval(() => {
+            //计算更新频率
             this.time_cur = new Date().getTime();
             let offset = this.time_cur - this.time_last
 
             if (offset > this.frameTime * 1000) {
+
                 let dt = offset / 1000;
-                this.time_last = this.time_cur;
                 this.updateGame(dt);
+                this.time_last = this.time_cur;
             }
             // console.log(offset);
 
@@ -79,6 +82,7 @@ export default class Room extends XBase {
 
 
     sendGameData(...args) { };
+    sendBinaryGameData(...args) { };
 
 
     updateGame(dt) {

@@ -24,10 +24,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.USceneComponentProtocol = void 0;
 var Enums_1 = require("../../Engine/Enums");
+var Protocol_1 = require("../../Engine/NetworkSystem/Share/Protocol");
 var XBase_1 = require("../../Engine/ReflectSystem/XBase");
 var UMath_1 = require("../../Engine/UMath");
 var Component_1 = __importDefault(require("../Component"));
+var USceneComponentProtocol = /** @class */ (function (_super) {
+    __extends(USceneComponentProtocol, _super);
+    function USceneComponentProtocol() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.viewBuffer = null;
+        return _this;
+    }
+    USceneComponentProtocol.prototype.init = function () {
+        this.dataLength = 12;
+    };
+    USceneComponentProtocol.prototype.initView = function () {
+        this.viewBuffer = this.getInt32(this.headLength, 3);
+    };
+    USceneComponentProtocol.prototype.setX = function (v) { this.viewBuffer[0] = v; };
+    USceneComponentProtocol.prototype.getX = function () { return this.viewBuffer[0]; };
+    USceneComponentProtocol.prototype.setY = function (v) { this.viewBuffer[1] = v; };
+    USceneComponentProtocol.prototype.getY = function () { return this.viewBuffer[1]; };
+    USceneComponentProtocol.prototype.setRot = function (v) { this.viewBuffer[2] = v; };
+    USceneComponentProtocol.prototype.getRot = function () { return this.viewBuffer[2]; };
+    return USceneComponentProtocol;
+}(Protocol_1.Protocol));
+exports.USceneComponentProtocol = USceneComponentProtocol;
 /**
  * 具有相对位置的组件基类
  * 实体组件
@@ -38,16 +62,24 @@ var USceneComponent = /** @class */ (function (_super) {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this._visiblity = Enums_1.Visiblity.Visible;
         _this._position = UMath_1.uu.v2();
-        _this._newPos = UMath_1.uu.v2();
-        _this._oldPos = UMath_1.uu.v2();
         _this._absPosition = UMath_1.uu.v2();
         _this._size = UMath_1.uu.v2(64, 64);
         _this._newSize = UMath_1.uu.v2(64, 64);
         _this._scale = UMath_1.uu.v2(1, 1);
         _this._rotation = 0;
+        //是否需要同步，对于非Root的Comp，实际上很多情况是不需要同步的
+        _this.needSync = true;
+        _this._newPos = UMath_1.uu.v2();
+        _this._oldPos = UMath_1.uu.v2();
         _this._newRot = 0;
         _this._oldRot = 0;
-        _this.needSync = true;
+        //内插值
+        _this.oldTick = 0;
+        _this.curTick = 0;
+        _this.timeFrame = 0;
+        _this.frameTimer = 0;
+        _this.frameRate = 0;
+        _this.hasNewData = false;
         _this.transformDirty = true;
         /** 相机剔除 */
         //是否在相机返回内
@@ -73,6 +105,35 @@ var USceneComponent = /** @class */ (function (_super) {
             this.transformDirty = false;
         }
     };
+    USceneComponent.prototype.checkTransformBinary = function () {
+        if (this.transformDirty && this.needSync) {
+            if (this._position.x != this._oldPos.x || this._position.y != this._oldPos.y || this._rotation != this._oldRot) {
+                var protocol = this.getProtocol(this.id, this.owner.world.gameInstance.protocolSystem);
+                protocol.requestBufferView();
+                var data = [Math.floor(this._position.x), Math.floor(this._position.y), Math.floor(this._rotation)];
+                this._oldPos.x = data[0];
+                this._position.x = data[0];
+                protocol.setX(data[0]);
+                this._oldPos.y = data[1];
+                this._position.y = data[1];
+                protocol.setY(data[1]);
+                this._oldRot = data[2];
+                this._rotation = data[2];
+                protocol.setRot(data[2]);
+            }
+            this.transformDirty = false;
+        }
+    };
+    USceneComponent.prototype.getProtocol = function (id, sys) { return new USceneComponentProtocol(id, sys); };
+    USceneComponent.prototype.receiveBinary = function (protocol) {
+        var pos = UMath_1.uu.v2(protocol.getX(), protocol.getY());
+        var rot = protocol.getRot();
+        this._oldPos = this._position.clone();
+        this._newPos = pos;
+        this._oldRot = this._rotation;
+        this._newRot = rot;
+        this.computeFrameRate(this.owner.world.gameInstance.curTick);
+    };
     //客户端接收到位移坐标
     USceneComponent.prototype.receiveData = function (obj) {
         var pos = UMath_1.uu.v2(obj[0], obj[1]);
@@ -82,29 +143,66 @@ var USceneComponent = /** @class */ (function (_super) {
         this._oldRot = this._rotation;
         this._newRot = rot;
     };
+    //内插值 计算出两次数据包的时间步长
+    USceneComponent.prototype.computeFrameRate = function (time) {
+        this.frameTimer = 0;
+        this.curTick = time;
+        if (this.curTick != 0 && this.oldTick != 0) {
+            this.timeFrame = this.curTick - this.oldTick;
+        }
+        this.oldTick = this.curTick;
+        this.hasNewData = true;
+    };
+    USceneComponent.prototype.updateFrameTime = function (dt) {
+        this.frameTimer += dt * 1000;
+        this.frameRate = UMath_1.UMath.clamp01(this.frameTimer / this.timeFrame / 2);
+    };
     USceneComponent.prototype.lerpTransform = function () {
         if (this.needSync) {
-            if (this.owner.world.gameInstance.timeFrame == 0) {
+            if (this.timeFrame == 0) {
+                // this._oldPos.x = this._position.x;
+                // this._oldPos.y = this._position.y;
+                // this._oldRot = this._rotation;
                 return;
             }
-            var start = this._oldPos.clone();
-            var target = this._newPos;
-            var rate = this.owner.world.gameInstance.frameRate;
-            start.lerp(target, rate);
+            var rate = this.frameRate;
+            //位置
+            if (!this._newPos.equals(this._position)) {
+                var start = this._oldPos.clone();
+                var target = this._newPos;
+                start.lerp(target, rate);
+                if (this.isRoot()) {
+                    this.owner.setPosition(start);
+                }
+                else {
+                    this.setPosition(start);
+                }
+            }
+            //旋转
             var begRot = this._oldRot;
-            var endRot = this._newRot;
-            // if (UMath.abs(begRot - endRot) > 180) {
-            //     endRot = UMath.abs(360 - endRot)
+            var newRot = begRot;
+            if (this._rotation != this._newRot) {
+                var endRot = this._newRot;
+                if (Math.abs(begRot - endRot) > 180) {
+                    endRot = endRot - 360;
+                }
+                newRot = Math.floor(UMath_1.UMath.lerp(begRot, endRot, rate));
+                if (this.isRoot()) {
+                    this.owner.setRotation(newRot);
+                }
+                else {
+                    this.setRotation(newRot);
+                }
+            }
+            // if (this.frameRate == 1 && this.hasNewData) {
+            //     this.oldTick = 0;
+            //     this.curTick = 0;
+            //     this.timeFrame = 0;
+            //     this.frameTimer = 0;
+            //     this.frameRate = 0;
+            //     console.log(1);
             // }
-            var newRot = UMath_1.UMath.lerp(begRot, endRot, rate);
-            if (this.isRoot()) {
-                this.owner.setPosition(start);
-                this.owner.setRotation(newRot);
-            }
-            else {
-                this.setPosition(start);
-                this.setRotation(newRot);
-            }
+            // this.hasNewData = false;
         }
     };
     USceneComponent.prototype.init = function (ac, id) {
@@ -155,10 +253,15 @@ var USceneComponent = /** @class */ (function (_super) {
         _super.prototype.update.call(this, dt);
         //服务器每帧和上一帧的数据进行比较，是否需要发送上一帧
         if (!this.owner.world.isClient) {
-            var data = this.checkTransform();
+            // this.checkTransform();
+            this.checkTransformBinary();
         }
         else {
-            this.lerpTransform();
+            //联机模式下才进行差值计算
+            if (!this.owner.world.gameInstance.bStandAlone) {
+                this.updateFrameTime(dt);
+                this.lerpTransform();
+            }
         }
     };
     USceneComponent.prototype.drawDebug = function (graphic) {
@@ -166,10 +269,10 @@ var USceneComponent = /** @class */ (function (_super) {
         // const pos = this.getPosition();
         // const size = this.getSize();
         // graphic.drawRect(pos.x-size.x/2, pos.y-size.y/2, size.x, size.y);
-        if (this.isRoot()) {
-            var ownAABB = this.owner.getCatAABB();
-            graphic.drawRect(ownAABB.min.x, ownAABB.min.y, this.owner.getSize().x, this.owner.getSize().y, UMath_1.UColor.BLUE());
-        }
+        // if (this.isRoot()) {
+        //     let ownAABB = this.owner.getCatAABB();
+        //     graphic.drawRect(ownAABB.min.x, ownAABB.min.y, this.owner.getSize().x, this.owner.getSize().y, UColor.BLUE());
+        // }
     };
     USceneComponent.prototype.draw = function (graphic) {
     };

@@ -14,7 +14,7 @@ export default class USpriteComponent extends USceneComponent {
 
     @xproperty(String)
     private textureName: string = "";
-    private needUpdateTexture: boolean = true;
+    public needUpdateTexture: boolean = true;
 
     @xproperty(UColor)
     private _color: UColor = UColor.WHITE();

@@ -39,6 +39,11 @@ var ServerUser = /** @class */ (function (_super) {
         var ns = this.mng.ns;
         ns.sendCmd(this.conn, cmd, obj);
     };
+    ServerUser.prototype.sendBinary = function (view, callback) {
+        if (callback === void 0) { callback = null; }
+        var ns = this.mng.ns;
+        ns.sendBinary(this.conn, view, callback);
+    };
     var ServerUser_1;
     ServerUser = ServerUser_1 = __decorate([
         XBase_1.xServer("User"),

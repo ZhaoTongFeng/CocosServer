@@ -75,30 +75,38 @@ var ServerNetworkSystem = /** @class */ (function (_super) {
             console.log(error);
         }
     };
+    ServerNetworkSystem.prototype.sendBinary = function (conn, bufferView, callback) {
+        if (callback === void 0) { callback = null; }
+        conn["sendBinary"](bufferView, callback);
+    };
     /************************************************
      * 接收
      ************************************************/
+    //解析操作码，分发数据
     ServerNetworkSystem.prototype.onReceive = function (conn, str) {
         var data = JSON.parse(str);
-        var tuple = this.events.get(Number(data["opt"]));
+        this.processReceive(conn, Number(data["opt"]), data);
+    };
+    ServerNetworkSystem.prototype.onReceiveBinary = function (conn, stream) {
+        var byteLength = stream.buffer["byteLength"];
+        var offset = stream["byteOffset"];
+        var view = new Uint32Array(stream.buffer, stream["byteOffset"], 2);
+        var opt = view[0];
+        var leng = view[1];
+        if (leng < byteLength - offset) {
+            var subview = new Uint8Array(stream.buffer, stream["byteOffset"], leng);
+            this.processReceive(conn, opt, subview);
+        }
+    };
+    ServerNetworkSystem.prototype.processReceive = function (conn, opt, data) {
+        var tuple = this.events.get(opt);
         if (tuple) {
             var func = tuple[0];
             var caller = tuple[1];
             var key = this.getKey(conn);
             func.call(caller, key, conn, data);
         }
-        this.printInfo();
-    };
-    ServerNetworkSystem.prototype.onReceiveBinary = function (conn, stream) {
-        var bufferView = new Uint8Array(stream);
-        console.log(bufferView);
-        var array = [1.1, 1.2, 1.3];
-        bufferView = new Uint8Array(array);
-        this.sendBinary(conn, bufferView);
-    };
-    ServerNetworkSystem.prototype.sendBinary = function (conn, buffer, callback) {
-        if (callback === void 0) { callback = null; }
-        conn["sendBinary"](buffer, callback);
+        // this.printInfo();
     };
     /************************************************
      * 指令 和 系统 注册

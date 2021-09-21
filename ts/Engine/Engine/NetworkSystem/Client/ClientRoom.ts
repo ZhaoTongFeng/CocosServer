@@ -56,6 +56,7 @@ export default class ClientRoom extends Room {
     public onGameBeg(obj: object) {
         console.log("1.3游戏开始，进入游戏关卡")
     }
+
     //初始化游戏实例
     public initGameInstance() {
         let gameInstance: UGameInstance = new UGameInstance();
@@ -111,12 +112,22 @@ export default class ClientRoom extends Room {
         // console.log(out);
         ns.sendCmd(NetCmd.GAME_SEND_SERVER, out);
     }
+
+    sendBinaryGameData(view) {
+        let ns = this.mng.ns;
+        ns.sendBinary(view);
+    };
+
     //6.2接收服务器的状态，更新本地状态
     public onReceiveGameData(obj: object) {
         let data = obj["data"];
         let time = obj["time"];
-        this.gameInstance.receiveGameData(data,time);
+        this.gameInstance.receiveGameData(data, time);
         // console.log(data);
+    }
+
+    onReceiveBinaryGameData(data) {
+        this.gameInstance.receiveBinaryGameData(data);
     }
 
     //5.3服务器收到了客户端发送的指令（不一定有这一步，除非变量被标记为完全可靠的）

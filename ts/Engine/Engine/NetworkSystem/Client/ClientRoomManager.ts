@@ -291,6 +291,10 @@ export default class ClientRoomManager extends RoomManager {
         let room = this.getLocRoom();
         room.onReceiveGameData(obj);
     }
+    onReceiveBinaryGameData(data) {
+        let room = this.getLocRoom();
+        room.onReceiveBinaryGameData(data);
+    }
 
     /**
      * 结算阶段

@@ -43,7 +43,7 @@ var Room = /** @class */ (function (_super) {
         _this.handle_game = -1;
         _this.fps = 60;
         _this.clientFps = 60;
-        _this.serverFps = 15;
+        _this.serverFps = 10;
         _this.frameTime = 0;
         _this.frameTimer = 0;
         _this.time_cur = 0;
@@ -66,20 +66,27 @@ var Room = /** @class */ (function (_super) {
         var world = this.gameInstance.getWorld();
         world.gameState = Enums_1.GameState.Playing;
         this.frameTime = 1 / this.fps;
-        this.time_cur = this.mng.ns.getCurrentTime();
-        this.time_last = this.mng.ns.getCurrentTime();
+        this.time_cur = this.time_last = this.mng.ns.getCurrentTime();
         this.handle_game = setInterval(function () {
+            //计算更新频率
             _this.time_cur = new Date().getTime();
             var offset = _this.time_cur - _this.time_last;
             if (offset > _this.frameTime * 1000) {
                 var dt = offset / 1000;
-                _this.time_last = _this.time_cur;
                 _this.updateGame(dt);
+                _this.time_last = _this.time_cur;
             }
             // console.log(offset);
         }, 16);
     };
     Room.prototype.sendGameData = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    ;
+    Room.prototype.sendBinaryGameData = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];

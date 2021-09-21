@@ -27,6 +27,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var MovementComponent_1 = __importDefault(require("../../../Engine/Component/Movement/MovementComponent"));
 var XBase_1 = require("../../../Engine/Engine/ReflectSystem/XBase");
 var UMath_1 = require("../../../Engine/Engine/UMath");
+/**
+ * 移动组件
+ * 将移动结果直接体验到SceneComponent上，让SceneComponent去同步数据，尽量不要在这些逻辑组件上去做操作。
+ */
 var UCharacterMovement = /** @class */ (function (_super) {
     __extends(UCharacterMovement, _super);
     function UCharacterMovement() {
@@ -36,21 +40,7 @@ var UCharacterMovement = /** @class */ (function (_super) {
         return _this;
     }
     UCharacterMovement_1 = UCharacterMovement;
-    UCharacterMovement.prototype.unUse = function () {
-        _super.prototype.unUse.call(this);
-    };
-    UCharacterMovement.prototype.reUse = function () {
-        _super.prototype.reUse.call(this);
-        this.rate = 0.5;
-    };
-    UCharacterMovement.prototype.init = function (obj) {
-        _super.prototype.init.call(this, obj);
-    };
-    UCharacterMovement.prototype.receiveData = function (obj) {
-    };
-    UCharacterMovement.prototype.destory = function () {
-        _super.prototype.destory.call(this);
-    };
+    //无论是客户端还是服务端都会调用这个，联机模式下，客户端没有必要去做这个操作。
     UCharacterMovement.prototype.processInput = function (input) {
         //用自己控制器的输入，更新本地状态
         var con = this.owner.controller;
@@ -58,21 +48,6 @@ var UCharacterMovement = /** @class */ (function (_super) {
             var moveDir = con.moveDirection;
             var moveRate = con.moveForce;
             this.setMoveForce(moveDir.mul(moveRate));
-        }
-    };
-    UCharacterMovement.prototype.slowdown = function (dt) {
-        var acc = this.max_acc / 10;
-        if (this.velocity.x > 0) {
-            this.velocity.x = Math.max(this.velocity.x - acc * dt, 0);
-        }
-        if (this.velocity.x < 0) {
-            this.velocity.x = Math.min(this.velocity.x + acc * dt, 0);
-        }
-        if (this.velocity.y > 0) {
-            this.velocity.y = Math.max(this.velocity.y - acc * dt, 0);
-        }
-        if (this.velocity.y < 0) {
-            this.velocity.y = Math.min(this.velocity.y + acc * dt, 0);
         }
     };
     UCharacterMovement.prototype.update = function (dt) {
@@ -112,12 +87,35 @@ var UCharacterMovement = /** @class */ (function (_super) {
                 rot = 180 - angle * 180 / Math.PI;
                 this.owner.setRotation(rot);
             }
-            // let n = UVec2.ZERO();
-            // let dot = this.velocity.dot(n);
-            // this.direction = this.velocity.sub(n.mul(2 * dot));
-            // if (n.x != 0) { this.velocity.x = n.x * Math.abs(this.direction.x * this.velocity.x * this.rate) }
-            // if (n.y != 0) { this.velocity.y = n.y * Math.abs(this.direction.y * this.velocity.y * this.rate) }
         }
+    };
+    /**
+     * 速度逐渐归零
+     * 归零的加速度有待研究，理论上太空没有阻力，除非自己减速，否则会一直往前飞。
+     * @param dt
+     */
+    UCharacterMovement.prototype.slowdown = function (dt) {
+        var acc = this.max_acc / 10;
+        if (this.velocity.x > 0) {
+            this.velocity.x = Math.max(this.velocity.x - acc * dt, 0);
+        }
+        if (this.velocity.x < 0) {
+            this.velocity.x = Math.min(this.velocity.x + acc * dt, 0);
+        }
+        if (this.velocity.y > 0) {
+            this.velocity.y = Math.max(this.velocity.y - acc * dt, 0);
+        }
+        if (this.velocity.y < 0) {
+            this.velocity.y = Math.min(this.velocity.y + acc * dt, 0);
+        }
+    };
+    //当前移动方向反弹
+    UCharacterMovement.prototype.reback = function () {
+        // let n = UVec2.ZERO();
+        // let dot = this.velocity.dot(n);
+        // this.direction = this.velocity.sub(n.mul(2 * dot));
+        // if (n.x != 0) { this.velocity.x = n.x * Math.abs(this.direction.x * this.velocity.x * this.rate) }
+        // if (n.y != 0) { this.velocity.y = n.y * Math.abs(this.direction.y * this.velocity.y * this.rate) }
     };
     var UCharacterMovement_1;
     UCharacterMovement = UCharacterMovement_1 = __decorate([

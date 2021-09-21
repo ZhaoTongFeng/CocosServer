@@ -2,67 +2,77 @@ import APawn from "../../../Engine/Actor/Pawn/Pawn";
 import { UInputSystem } from "../../../Engine/Engine/InputSystem/InputSystem";
 import { xclass } from "../../../Engine/Engine/ReflectSystem/XBase";
 import { UVec2, uu } from "../../../Engine/Engine/UMath";
+import UShipEngine from "../Component/ShipEngine";
 import UShipItem from "../Component/ShipItem";
 import UShipShield from "../Component/ShipShield";
+import UShipWeapon from "../Component/ShipWeapon";
 import UBattleComponent from "../Info/BattleComponent";
 
 
 
 
 /**
- * 角色基类
- * 包含基本的位移操作
- * 
- * 玩家点击一个位置，飞船朝这个方向移动，
+ * 飞船
+ * 包含一个网格插槽，能插上各种ShipItem
  */
 @xclass(AShip)
 export default class AShip extends APawn {
+
+    //战斗属性
+    protected battleComp: UBattleComponent = null;
+
     //装备插槽 尺寸
     protected itemSize: UVec2 = uu.v2(1, 3);
     //装备插槽 存储
     protected items: UShipItem[][] = [];
-    //战斗属性
-    protected battleComp: UBattleComponent = null;
 
+    //护盾
     protected shieldComp: UShipShield = null;
-    
-    getShield() {
-        return this.shieldComp;
-    }
-    setShield(shield: UShipShield) {
-        this.shieldComp = shield
-    }
-    setItemsSize(x: number, y: number) {
+
+    //主武器
+    protected weaponComp: UShipWeapon = null;
+
+    //引擎
+    protected engineComp: UShipEngine = null;
+
+
+    public setBattleComp(comp: UBattleComponent) { this.battleComp = comp; }
+    public getBattleComp() { return this.battleComp; }
+
+    public setShield(comp: UShipShield) { this.shieldComp = comp }
+    public getShield() { return this.shieldComp; }
+
+    public setWeapon(comp: UShipWeapon) { this.weaponComp = comp; }
+    public getWeapon() { return this.weaponComp; }
+
+    public setEngine(comp: UShipEngine) { this.engineComp = comp; }
+    public getEngine() { return this.engineComp; }
+
+
+
+
+    public setItemsSize(x: number, y: number) {
         this.itemSize.y = y;
         this.itemSize.x = x;
     }
-    getItemSize() {
+    public getItemSize() {
         return this.itemSize;
     }
-
-
-
 
     public addItem(item: UShipItem) {
         let itemPos = item.getItemPosition();
         this.items[itemPos.y][itemPos.x] = item;
     }
-    public removeWeapon(item: UShipItem) {
+    public removeItem(item: UShipItem) {
         let itemPos = item.getItemPosition();
         this.items[itemPos.y][itemPos.x] = null;
     }
 
 
-    setBattleComp(battle: UBattleComponent) {
-        this.battleComp = battle;
-    }
-    getBattleComp() {
-        return this.battleComp;
-    }
+
 
     unUse() {
         super.unUse();
-
     }
 
     reUse() {

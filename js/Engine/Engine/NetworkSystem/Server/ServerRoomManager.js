@@ -242,6 +242,17 @@ var ServerRoomManager = /** @class */ (function (_super) {
         var room = this.getRoomById(id_room);
         room.onReceiveGameData(user, obj);
     };
+    ServerRoomManager.prototype.onReceiveBinaryGameData = function (key, conn, obj) {
+        var userMng = this.ns.userManager;
+        var user = userMng.getUserByKey(key);
+        if (!user) {
+            console.log("未登录", key, obj);
+            return;
+        }
+        var id_room = "abc";
+        var room = this.getRoomById(id_room);
+        room.onReceiveBinaryGameData(user, obj);
+    };
     /**
      * 结算阶段
      */

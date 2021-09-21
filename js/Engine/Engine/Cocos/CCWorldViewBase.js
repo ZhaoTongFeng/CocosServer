@@ -56,6 +56,8 @@ var CCWorldViewBase = /** @class */ (function (_super) {
         //图片Node池
         _this.spritePrefab = null;
         _this.spritePool = new cc.NodePool();
+        _this.labelPrefab = null;
+        _this.labelPool = new cc.NodePool();
         _this.leftJoyStick = null;
         _this.rightJoyStick = null;
         /**
@@ -76,6 +78,7 @@ var CCWorldViewBase = /** @class */ (function (_super) {
         _this.nodeMap = new Map();
         _this.spriteMap = new Map();
         _this.SpriteFrameMap = new Map();
+        _this.labelMap = new Map();
         _this.cameraMap = new Map();
         _this.camerCompMap = new Map();
         _this.currentCameraComp = null;
@@ -137,6 +140,12 @@ var CCWorldViewBase = /** @class */ (function (_super) {
         this.worldView.removeSpriteComponent = function (comp) {
             _this.removeSpriteComponent(comp);
         };
+        this.worldView.addTextComponent = function (comp) {
+            _this.addTextComponent(comp);
+        };
+        this.worldView.removeTextComponent = function (comp) {
+            _this.removeTextComponent(comp);
+        };
         // this.worldView.addUINode = this.addUINode;
         // this.worldView.removeUINode = this.removeUINode;
         this.worldView.onSceneCompSetVisible = function (comp) {
@@ -150,6 +159,9 @@ var CCWorldViewBase = /** @class */ (function (_super) {
         };
         this.worldView.onDrawTexture = function (comp) {
             _this.onDrawTexture(comp);
+        };
+        this.worldView.onDrawText = function (comp) {
+            _this.onDrawText(comp);
         };
         this.worldView.onGetSceneCameraProperty = function (comp) {
             _this.onGetSceneCameraProperty(comp);
@@ -165,10 +177,13 @@ var CCWorldViewBase = /** @class */ (function (_super) {
         this.frameTime = 1 / this.fps;
         //初始化ViewPool
         for (var i = 0; i < 100; i++) {
-            var enemy = cc.instantiate(this.spritePrefab); // 创建节点
-            this.spritePool.put(enemy); // 通过 put 接口放入对象池
+            var ins = cc.instantiate(this.spritePrefab);
+            this.spritePool.put(ins);
+            ins = cc.instantiate(this.labelPrefab); // 创建节点
+            this.labelPool.put(ins); // 通过 put 接口放入对象池
         }
-        cc.log("pool", this.spritePool.size());
+        cc.log("sprite pool size:", this.spritePool.size());
+        cc.log("label pool size:", this.labelPool.size());
     };
     //退出和进入此场景操作
     CCWorldViewBase.prototype.onEnter = function (world, data) {
@@ -184,10 +199,6 @@ var CCWorldViewBase = /** @class */ (function (_super) {
             cc.log("spPool", this.spritePool.size(), "node", this.nodeMap.size, "sprite", this.spriteMap.size);
             this.timer = 0;
         }
-    };
-    CCWorldViewBase.prototype.intersectBoxBox = function (a, b) {
-        var no = a.max.x < b.min.x || a.max.y < b.min.y || b.max.x < a.min.x || b.max.y < a.min.y;
-        return !no;
     };
     CCWorldViewBase.prototype.update = function (dt) {
         this.updateInput();
@@ -215,10 +226,13 @@ var CCWorldViewBase = /** @class */ (function (_super) {
                 var pos = this.currentCameraComp.getPosition();
                 this.cameraScene.node.setPosition(pos.x, pos.y);
                 this.cameraScene.node.angle = this.currentCameraComp.getRotation();
+                this.cameraScene.zoomRatio = this.currentCameraComp.zoomRatio;
+                // this.cameraScene.orthoSize = this.currentCameraComp._orthoSize
                 cameraAABB = this.currentCameraComp.catAABB;
             }
             if (cameraAABB) {
                 world.actorSystem.spriteComponents.forEach(this.catSpriteComp, this);
+                world.actorSystem.textComponents.forEach(this.catTextComp, this);
             }
             else {
                 cc.warn("cameraAABB==null没有相机，无法剔除");
@@ -227,7 +241,51 @@ var CCWorldViewBase = /** @class */ (function (_super) {
         this.graphic.begDrawDebug();
         this.worldView.gameInstance.drawDebug(this.worldView.graphic);
     };
+    CCWorldViewBase.prototype.intersectBoxBox = function (a, b) {
+        var no = a.max.x < b.min.x || a.max.y < b.min.y || b.max.x < a.min.x || b.max.y < a.min.y;
+        return !no;
+    };
     CCWorldViewBase.prototype.catSpriteComp = function (comp) {
+        var cameraAABB = this.currentCameraComp.catAABB;
+        var sceneAABB = comp.owner.getCatAABB();
+        if (sceneAABB == null) {
+            return;
+        }
+        var key = comp.id;
+        var node = this.nodeMap.get(key);
+        if (node && comp.state == Enums_1.UpdateState.Dead) {
+            this.removeSpriteComponent(comp);
+        }
+        var newInCamera = this.intersectBoxBox(cameraAABB, sceneAABB);
+        if (newInCamera) {
+            if (node) {
+                this.updateSceneComp(comp);
+            }
+            else {
+                if (!comp.inCamera && comp.visiblity == Enums_1.Visiblity.Visible) {
+                    //添加
+                    var node_1 = this.addSpriteComponent(comp);
+                    if (node_1) {
+                        this.onSceneCompComputeTransfor(comp); //初始化位置
+                        this.onSpriteCompSetColor(comp, node_1); //颜色
+                    }
+                }
+            }
+            if (comp.needUpdateTexture) {
+                this.onDrawTexture(comp); //材质
+                comp.needUpdateTexture = false;
+            }
+        }
+        else {
+            if (node && comp.inCamera) {
+                //移除
+                this.removeSpriteComponent(comp);
+                // console.log(cameraAABB, sceneAABB)
+            }
+        }
+        comp.inCamera = newInCamera;
+    };
+    CCWorldViewBase.prototype.catTextComp = function (comp) {
         var cameraAABB = this.currentCameraComp.catAABB;
         var sceneAABB = comp.owner.getCatAABB();
         if (sceneAABB == null) {
@@ -243,11 +301,10 @@ var CCWorldViewBase = /** @class */ (function (_super) {
             else {
                 if (!comp.inCamera && comp.visiblity == Enums_1.Visiblity.Visible) {
                     //添加
-                    var node_1 = this.addSpriteComponent(comp);
-                    if (node_1) {
-                        this.onDrawTexture(comp); //材质
+                    var node_2 = this.addTextComponent(comp);
+                    if (node_2) {
+                        this.onDrawText(comp);
                         this.onSceneCompComputeTransfor(comp); //初始化位置
-                        this.onSpriteCompSetColor(comp, node_1); //颜色
                     }
                 }
             }
@@ -255,7 +312,7 @@ var CCWorldViewBase = /** @class */ (function (_super) {
         else {
             if (node && comp.inCamera) {
                 //移除
-                this.removeSpriteComponent(comp);
+                this.removeTextComponent(comp);
                 // console.log(cameraAABB, sceneAABB)
             }
         }
@@ -400,6 +457,52 @@ var CCWorldViewBase = /** @class */ (function (_super) {
             }
         }
     };
+    CCWorldViewBase.prototype.addTextComponent = function (comp) {
+        var key = comp.id;
+        //TODO
+        if (comp.isMainScene() == false && comp.owner.getSceneComponent() == null) {
+            cc.error("这个地方有个BUG，如果子节点宽度比父节点大，parentComp会为null，导致添加失败");
+            return null;
+        }
+        var node = null;
+        if (this.labelPool.size() > 0) { // 通过 size 接口判断对象池中是否有空闲的对象
+            node = this.labelPool.get();
+        }
+        else { // 如果没有空闲对象，也就是对象池中备用对象不够时，我们就用 cc.instantiate 重新创建
+            node = cc.instantiate(this.spritePrefab);
+        }
+        node.active = false;
+        node.name = key;
+        if (comp.isMainScene()) {
+            this.rootScene.addChild(node);
+        }
+        else {
+            var parentComp = comp.owner.getSceneComponent();
+            var parentNode = this.nodeMap.get(parentComp.id);
+            parentNode.addChild(node);
+        }
+        var label = node.getComponent(cc.Label);
+        this.nodeMap.set(key, node);
+        this.labelMap.set(key, label);
+        this.onDrawText(comp);
+        return node;
+    };
+    CCWorldViewBase.prototype.onDrawText = function (comp) {
+        var label = this.labelMap.get(comp.id);
+        if (!label) {
+            return;
+        }
+        label.string = comp.getText();
+    };
+    CCWorldViewBase.prototype.removeTextComponent = function (comp) {
+        var key = comp.id;
+        var node = this.nodeMap.get(key);
+        if (node) {
+            this.labelPool.put(node);
+            this.nodeMap.delete(key);
+            this.labelMap.delete(key);
+        }
+    };
     CCWorldViewBase.prototype.addCameraComponent = function (comp) {
         var key = comp.id;
         this.nodeMap.set(key, this.cameraScene.node);
@@ -515,6 +618,9 @@ var CCWorldViewBase = /** @class */ (function (_super) {
     __decorate([
         property(cc.Prefab)
     ], CCWorldViewBase.prototype, "spritePrefab", void 0);
+    __decorate([
+        property(cc.Prefab)
+    ], CCWorldViewBase.prototype, "labelPrefab", void 0);
     __decorate([
         property(JoyStick_1.default)
     ], CCWorldViewBase.prototype, "leftJoyStick", void 0);

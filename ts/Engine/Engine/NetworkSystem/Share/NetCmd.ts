@@ -35,6 +35,7 @@ export enum NetCmd {
     GAME_RESULT = 108,           //服务器发送结算结果
     GAME_END = 109,              //服务器通知游戏彻底结束
 
+    GAME_SEND_BINARY = 110,
     //开发者接口
     DEV_SERVER_STATUS = 500,
 }

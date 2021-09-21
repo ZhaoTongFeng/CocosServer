@@ -24,6 +24,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var BulletProject_1 = __importDefault(require("../../Game1/Engine/Actor/BulletProject"));
 var Object_1 = __importDefault(require("../Object"));
 var ActorSystem_1 = __importDefault(require("./ActorSystem/ActorSystem"));
 var CollisionSystem_1 = __importDefault(require("./CollisionSystem/CollisionSystem"));
@@ -49,7 +50,11 @@ var UWorld = /** @class */ (function (_super) {
         _this.isClient = false;
         /** 主要数据 */
         _this.actors = [];
-        //这个世界的自增ID
+        /**
+         * 世界的自增ID
+         * 虽然在UObject实例化时已经设置，但是客户端和服务端的ID是完全不同的
+         * 所以针对每一个World，都必须有一个局部的ID，并且这个ID，完全来自于服务端，因为服务端必须有所有object的ID，才能在调用时找到。
+         */
         _this._generateID = 0;
         _this._users = [];
         /** 缓存 */
@@ -104,12 +109,8 @@ var UWorld = /** @class */ (function (_super) {
         this._generateID++;
         return id + "";
     };
-    UWorld.prototype.getCurrentGenID = function () {
-        return this._generateID;
-    };
-    UWorld.prototype.setCurrentGenID = function (id) {
-        this._generateID = id;
-    };
+    UWorld.prototype.getCurrentGenID = function () { return this._generateID; };
+    UWorld.prototype.setCurrentGenID = function (id) { this._generateID = id; };
     Object.defineProperty(UWorld.prototype, "users", {
         get: function () {
             return this.gameInstance.room.getAllUsers();
@@ -150,12 +151,13 @@ var UWorld = /** @class */ (function (_super) {
     UWorld.prototype.update = function (dt) {
         var _this = this;
         if (this.gameState == Enums_1.GameState.Playing) {
+            //清空移动状态，再接收输入
+            this.actorSystem.movementComps.forEach(function (comp) { comp.clear(); });
             //本地输入
             this.actors.forEach(function (ac) {
                 ac.processInput(_this.gameInstance.input);
             });
-            //TODO 如果是单机模式则直接在这里消耗指令
-            //更新
+            //基本更新 更新Actor
             this.isUpdating = true;
             this.actors.forEach(function (actor) {
                 if (actor.canEveryTick) {
@@ -163,6 +165,7 @@ var UWorld = /** @class */ (function (_super) {
                 }
             });
             this.isUpdating = false;
+            //转发到World实例，执行更复杂的系统
             this.updateWorld(dt);
             //添加这一帧添加的AC
             for (var i = 0; i < this.actors_peending.length; i++) {
@@ -173,6 +176,9 @@ var UWorld = /** @class */ (function (_super) {
             //删除这一帧删除的AC
             for (var i = this.actors.length - 1; i >= 0; i--) {
                 if (this.actors[i].state == Enums_1.UpdateState.Dead) {
+                    if (this.actors[i] instanceof BulletProject_1.default) {
+                        console.log("被删除", this.actors[i].id);
+                    }
                     this.destoryActor(this.actors[i]);
                     this.actors.splice(i, 1);
                 }
@@ -240,11 +246,7 @@ var UWorld = /** @class */ (function (_super) {
         comp.init(actor);
         return comp;
     };
-    /**
-     * 增加Actor
-     * 需要考虑在更新过程中添加的情况，而删除Actor，不需要考虑，因为全部都是这一帧结束后删除
-     * @param actor
-     */
+    //增加Actor 需要考虑在更新过程中添加的情况，而删除Actor，不需要考虑，因为全部都是这一帧结束后删除
     UWorld.prototype.addActor = function (actor) {
         if (this.isUpdating) {
             this.actors_peending.push(actor);

@@ -71,6 +71,7 @@ var RoomManager = /** @class */ (function (_super) {
         ns.register(NetCmd_1.NetCmd.GAME_FINISH, this.onSendGameFinish, this);
         ns.register(NetCmd_1.NetCmd.GAME_RESULT, this.onSendGameResult, this);
         ns.register(NetCmd_1.NetCmd.GAME_END, this.onSendGameEnd, this);
+        ns.register(NetCmd_1.NetCmd.GAME_SEND_BINARY, this.onReceiveBinaryGameData, this);
     };
     //获取房间列表
     RoomManager.prototype.getList = function () {
@@ -144,6 +145,12 @@ var RoomManager = /** @class */ (function (_super) {
         }
     };
     RoomManager.prototype.onReceiveGameData = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    RoomManager.prototype.onReceiveBinaryGameData = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];

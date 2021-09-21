@@ -74,10 +74,22 @@ var NetworkSystem = /** @class */ (function (_super) {
             args[_i] = arguments[_i];
         }
     };
+    NetworkSystem.prototype.sendBinary = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
     /************************************************
      * 接收
      ************************************************/
     NetworkSystem.prototype.onReceive = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    };
+    NetworkSystem.prototype.onReceiveBinary = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];

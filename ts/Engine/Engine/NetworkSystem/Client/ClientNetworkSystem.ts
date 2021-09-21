@@ -1,6 +1,7 @@
 import { xclass } from "../../ReflectSystem/XBase";
 import { NetCmd } from "../Share/NetCmd";
 import NetworkSystem from "../Share/NetworkSystem";
+import { ProtocolSystem } from "../Share/Protocol";
 import RoomManager from "../Share/RoomManager";
 import ClientRoomManager from "./ClientRoomManager";
 import ClientUserManager from "./ClientUserManager";
@@ -18,7 +19,8 @@ export enum ConnectionStatus {
  */
 @xclass(ClientNetworkSystem)
 export default class ClientNetworkSystem extends NetworkSystem {
-
+    // protected url = "wss://www.llag.net/game/id=123";
+    protected url = "ws://localhost:52312";
     static Ins: ClientNetworkSystem = null
 
     //TODO 为了测试方便直接在这儿发，实际上还是房间内进行发送，服务器和客户端保持一致
@@ -37,8 +39,7 @@ export default class ClientNetworkSystem extends NetworkSystem {
 
     public delay: number = 0;
 
-    // protected url = "wss://www.llag.net/game/id=123";
-    protected url = "ws://localhost:52312";
+
     protected ws: WebSocket = null;
 
 
@@ -68,34 +69,32 @@ export default class ClientNetworkSystem extends NetworkSystem {
         }
     }
 
-
-
+    public sendBinary(binBuffer) {
+        this.ws.send(binBuffer);
+    }
     /************************************************
      * 接收
      ************************************************/
-
     protected onReceive(str) {
         let obj = JSON.parse(str);
-        let opt = Number(obj["opt"]);
-
-
+        this.processReceive(Number(obj["opt"]), obj);
+    }
+    protected onReceiveBinary(bin) {
+        let view = new Uint32Array(bin);
+        this.processReceive(view[0], view);
+    }
+    protected processReceive(opt, data) {
         //发送回调
         //稳定回调，百分之百对应接口
         let tuple = this.events.get(opt);
         if (tuple) {
             let func: Function = tuple[0];
             let caller = tuple[1];
-            func.call(caller, obj);
+            func.call(caller, data);
         }
         //外部回调，外面用on注册
-        this.emit(opt + "", obj);
+        this.emit(opt + "", data);
     }
-
-    onReceiveBinary(bin) {
-        let bufferView = new Uint8Array(bin);
-        console.log(bufferView);
-    }
-
     /************************************************
      * 指令 和 系统 注册
      ************************************************/

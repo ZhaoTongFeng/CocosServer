@@ -1,3 +1,4 @@
+import UMovementComponent from "../../Component/Movement/MovementComponent";
 import USceneComponent from "../../Component/SceneComponent/SceneComponent";
 import USpriteComponent from "../../Component/SceneComponent/SpriteComponent";
 import UTextComponent from "../../Component/SceneComponent/TextComponent";
@@ -12,6 +13,18 @@ import UWorld from "../World";
  */
 @xclass(UActorSystem)
 export default class UActorSystem extends UObject {
+
+    movementComps: UMovementComponent[] = [];
+    registerMovement(comp: UMovementComponent) {
+        this.movementComps.push(comp);
+    }
+    unRegisterMovement(comp: UMovementComponent) {
+        let index = this.movementComps.findIndex((one) => one == comp);
+        if (index > -1) {
+            this.movementComps.splice(index, 1);
+        }
+    }
+
     //组件和actor对象映射，主要用在状态更新
     objMap: Map<string, UObject> = new Map();
     registerObj(obj: UObject) {
@@ -24,7 +37,7 @@ export default class UActorSystem extends UObject {
     sceneComponents: USceneComponent[] = [];
     registerSceneComponent(scene: USceneComponent) {
         this.sceneComponents.push(scene);
-        
+
     }
     unRegisterSceneComponent(scene: USceneComponent) {
         let index = this.sceneComponents.findIndex((one) => {
@@ -47,7 +60,7 @@ export default class UActorSystem extends UObject {
         })
         if (index > -1) {
             this.spriteComponents.splice(index, 1);
-            // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
+            this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
         }
     }
     textComponents: UTextComponent[] = [];
@@ -60,19 +73,10 @@ export default class UActorSystem extends UObject {
         })
         if (index > -1) {
             this.textComponents.splice(index, 1);
-            // this.world.gameInstance.getWorldView().removeSpriteComponent(scene);
+            this.world.gameInstance.getWorldView().removeTextComponent(scene);
         }
     }
 
-
-    registerAll(){
-        this.sceneComponents.forEach(comp=>{
-            // this.world.gameInstance.getWorldView().addSceneComponent(comp);
-        })
-        this.spriteComponents.forEach(comp => {
-            // this.world.gameInstance.getWorldView().addSpriteComponent(comp);
-        });
-    }
 
 
     world: UWorld = null;

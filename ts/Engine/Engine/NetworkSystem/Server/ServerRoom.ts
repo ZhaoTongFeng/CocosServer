@@ -27,6 +27,20 @@ export default class ServerRoom extends Room {
             console.log(error);
         }
     }
+    public broadcastBinary(view) {
+        try {
+
+            this.users.forEach(id_user => {
+                let user = this.mng.getUserById(id_user);
+                if (user) {
+                    (user as ServerUser).sendBinary(view);
+                }
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
 
     public onAdd(user: ServerUser) {
         //记录房主信息，并直接将房主添加到房间
@@ -248,13 +262,21 @@ export default class ServerRoom extends Room {
         this.broadcast(NetCmd.GAME_SEND_SERVER, out)
     }
 
+    sendBinaryGameData(view) {
+
+        this.broadcastBinary(view)
+    }
+
 
     //6.3服务器收到客户端输入，更新Controller状态
     public onReceiveGameData(user: ServerUser, obj: Object) {
         let data = obj["data"];
         let time = obj["time"];
-        this.gameInstance.receiveGameData(data,time);
-        // console.log(data);
+        this.gameInstance.receiveGameData(data, time);
+    }
+
+    onReceiveBinaryGameData(user: ServerUser, data) {
+        this.gameInstance.receiveBinaryGameData(data);
     }
 
 

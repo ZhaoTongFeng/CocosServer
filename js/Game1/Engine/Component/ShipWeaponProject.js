@@ -43,13 +43,59 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UShipWeaponProjectProtocol = void 0;
 var SphereComponent_1 = __importDefault(require("../../../Engine/Component/Collision/SphereComponent"));
 var SpriteComponent_1 = __importDefault(require("../../../Engine/Component/SceneComponent/SpriteComponent"));
+var Protocol_1 = require("../../../Engine/Engine/NetworkSystem/Share/Protocol");
 var XBase_1 = require("../../../Engine/Engine/ReflectSystem/XBase");
 var UMath_1 = require("../../../Engine/Engine/UMath");
 var BulletProject_1 = __importDefault(require("../Actor/BulletProject"));
 var BulletMovement_1 = __importDefault(require("./BulletMovement"));
 var ShipWeapon_1 = __importStar(require("./ShipWeapon"));
+var UShipWeaponProjectProtocol = /** @class */ (function (_super) {
+    __extends(UShipWeaponProjectProtocol, _super);
+    function UShipWeaponProjectProtocol() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        //1.定义数据访问格式，不一定只有一个，按照需要读写的数据来决定
+        _this.viewBuffer1 = undefined;
+        _this.viewBuffer2 = undefined;
+        _this.viewBuffer3 = undefined;
+        return _this;
+    }
+    UShipWeaponProjectProtocol.prototype.init = function () {
+        this.dataLength = 4 + 4 * 4 + 4 * 4;
+    };
+    UShipWeaponProjectProtocol.prototype.initView = function () {
+        var offset = this.headLength;
+        this.viewBuffer1 = this.getUint8(offset, 4);
+        offset += 4;
+        this.viewBuffer2 = this.getUint32(offset, 4);
+        offset += 4 * 4;
+        this.viewBuffer3 = this.getInt32(offset, 4);
+    };
+    UShipWeaponProjectProtocol.prototype.setOpt = function (v) { this.viewBuffer1[0] = v; };
+    UShipWeaponProjectProtocol.prototype.getOpt = function () { return this.viewBuffer1[0]; };
+    UShipWeaponProjectProtocol.prototype.setRand = function (v) { this.viewBuffer1[1] = v; };
+    UShipWeaponProjectProtocol.prototype.getRand = function () { return this.viewBuffer1[1]; };
+    UShipWeaponProjectProtocol.prototype.setId = function (v) { this.viewBuffer2[0] = v; };
+    UShipWeaponProjectProtocol.prototype.getId = function () { return this.viewBuffer2[0]; };
+    UShipWeaponProjectProtocol.prototype.setSId = function (v) { this.viewBuffer2[1] = v; };
+    UShipWeaponProjectProtocol.prototype.getSId = function () { return this.viewBuffer2[1]; };
+    UShipWeaponProjectProtocol.prototype.setMId = function (v) { this.viewBuffer2[2] = v; };
+    UShipWeaponProjectProtocol.prototype.getMId = function () { return this.viewBuffer2[2]; };
+    UShipWeaponProjectProtocol.prototype.setWId = function (v) { this.viewBuffer2[3] = v; };
+    UShipWeaponProjectProtocol.prototype.getWId = function () { return this.viewBuffer2[3]; };
+    UShipWeaponProjectProtocol.prototype.setX = function (v) { this.viewBuffer3[0] = v; };
+    UShipWeaponProjectProtocol.prototype.getX = function () { return this.viewBuffer3[0]; };
+    UShipWeaponProjectProtocol.prototype.setY = function (v) { this.viewBuffer3[1] = v; };
+    UShipWeaponProjectProtocol.prototype.getY = function () { return this.viewBuffer3[1]; };
+    UShipWeaponProjectProtocol.prototype.setVx = function (v) { this.viewBuffer3[2] = v; };
+    UShipWeaponProjectProtocol.prototype.getVx = function () { return this.viewBuffer3[2]; };
+    UShipWeaponProjectProtocol.prototype.setVy = function (v) { this.viewBuffer3[3] = v; };
+    UShipWeaponProjectProtocol.prototype.getVy = function () { return this.viewBuffer3[3]; };
+    return UShipWeaponProjectProtocol;
+}(Protocol_1.Protocol));
+exports.UShipWeaponProjectProtocol = UShipWeaponProjectProtocol;
 var UShipWeaponProject = /** @class */ (function (_super) {
     __extends(UShipWeaponProject, _super);
     function UShipWeaponProject() {
@@ -59,6 +105,7 @@ var UShipWeaponProject = /** @class */ (function (_super) {
         return _this;
     }
     UShipWeaponProject_1 = UShipWeaponProject;
+    UShipWeaponProject.prototype.getProtocol = function (id, sys) { return new UShipWeaponProjectProtocol(id, sys); };
     UShipWeaponProject.prototype.unUse = function () {
         _super.prototype.unUse.call(this);
     };
@@ -118,9 +165,44 @@ var UShipWeaponProject = /** @class */ (function (_super) {
             console.log("停火");
         }
     };
+    UShipWeaponProject.prototype.receiveBinary = function (protocol) {
+        var opt = protocol.getOpt();
+        if (opt == 0) {
+            var wId = protocol.getWId();
+            var id = protocol.getId();
+            var rand = protocol.getRand();
+            var px = protocol.getX();
+            var py = protocol.getY();
+            var vx = protocol.getVx();
+            var vy = protocol.getVy();
+            var mId = protocol.getMId();
+            var sId = protocol.getSId();
+            this.owner.world.setCurrentGenID(Number(wId));
+            var bullet = new BulletProject_1.default();
+            bullet.init(this.owner.world, id);
+            //显示
+            var spriteComp = new SpriteComponent_1.default();
+            spriteComp.init(bullet, sId);
+            spriteComp.setTexture(this.textureName + rand);
+            spriteComp.needSync = false;
+            //碰撞
+            var collision = bullet.spawnComponent(SphereComponent_1.default);
+            // collision.setPadding(8);
+            //基本属性
+            bullet.setScale(UMath_1.uu.v2(0.5, 0.5));
+            bullet.setPosition(UMath_1.uu.v2(px, py));
+            bullet.setOwner(this.owner);
+            //移动
+            bullet.movementComponent = new BulletMovement_1.default();
+            bullet.movementComponent.init(bullet, mId);
+            bullet.movementComponent.velocity.x = vx;
+            bullet.movementComponent.velocity.y = vy;
+        }
+    };
     //CLIENT
     UShipWeaponProject.prototype.receiveData = function (obj) {
-        if (obj["opt"] == "fire") {
+        var opt = obj["opt"];
+        if (opt == 0) {
             var wId = obj["wId"];
             var id = obj["id"];
             var rand = obj["rand"];
@@ -161,7 +243,8 @@ var UShipWeaponProject = /** @class */ (function (_super) {
         var id = bullet.id;
         //显示
         var spriteComp = bullet.spawnComponent(SpriteComponent_1.default);
-        var rand = 1 + Math.floor(Math.random() * 2.9);
+        // let rand = 1 + Math.floor(Math.random() * 2.9);
+        var rand = 3;
         spriteComp.setTexture(this.textureName + rand);
         spriteComp.needSync = false;
         //碰撞
@@ -179,24 +262,40 @@ var UShipWeaponProject = /** @class */ (function (_super) {
         //2.朝target方向发射
         var direction = UMath_1.uu.v2(0, 1);
         direction = direction.rotate(UMath_1.UMath.toRadians(this.owner.getRotation()));
-        var speed = 500;
+        var speed = 1000;
         var vx = direction.x * speed;
         var vy = direction.y * speed;
         bullet.movementComponent.velocity.x = vx;
         bullet.movementComponent.velocity.y = vy;
-        var obj = {
-            wId: this.owner.world.getCurrentGenID(),
-            opt: "fire",
-            id: id,
-            sId: spriteComp.id,
-            mId: bullet.movementComponent.id,
-            rand: rand,
-            px: pos.x,
-            py: pos.y,
-            vx: vx,
-            vy: vy
-        };
-        this.owner.world.gameInstance.sendGameData(obj, this);
+        var wid = this.owner.world.getCurrentGenID();
+        var sid = spriteComp.id;
+        var mid = bullet.movementComponent.id;
+        var opt = 0;
+        // let obj = {
+        //     wId: this.owner.world.getCurrentGenID(),
+        //     opt: opt,
+        //     rand: rand,
+        //     id: id,
+        //     sId:sid,
+        //     mId: mid,
+        //     px: pos.x,
+        //     py: pos.y,
+        //     vx: vx,
+        //     vy: vy
+        // };
+        // this.owner.world.gameInstance.sendGameData(obj, this);
+        var protocol = this.getProtocol(this.id, this.owner.world.gameInstance.protocolSystem);
+        protocol.requestBufferView();
+        protocol.setOpt(opt);
+        protocol.setRand(rand);
+        protocol.setId(id);
+        protocol.setWId(wid);
+        protocol.setSId(sid);
+        protocol.setMId(mid);
+        protocol.setX(pos.x);
+        protocol.setY(pos.y);
+        protocol.setVx(vx);
+        protocol.setVy(vy);
     };
     //SERVER
     UShipWeaponProject.prototype.processInput = function (input) {

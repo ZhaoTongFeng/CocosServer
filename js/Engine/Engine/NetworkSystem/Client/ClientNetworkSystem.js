@@ -46,11 +46,11 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
     __extends(ClientNetworkSystem, _super);
     function ClientNetworkSystem() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        // protected url = "wss://www.llag.net/game/id=123";
+        _this.url = "ws://localhost:52312";
         //网络连接状态
         _this.conState = ConnectionStatus.NO;
         _this.delay = 0;
-        // protected url = "wss://www.llag.net/game/id=123";
-        _this.url = "ws://localhost:52312";
         _this.ws = null;
         //重连
         _this.reConFlag = false;
@@ -97,26 +97,31 @@ var ClientNetworkSystem = /** @class */ (function (_super) {
             // console.log("Client", obj);
         }
     };
+    ClientNetworkSystem.prototype.sendBinary = function (binBuffer) {
+        this.ws.send(binBuffer);
+    };
     /************************************************
      * 接收
      ************************************************/
     ClientNetworkSystem.prototype.onReceive = function (str) {
         var obj = JSON.parse(str);
-        var opt = Number(obj["opt"]);
+        this.processReceive(Number(obj["opt"]), obj);
+    };
+    ClientNetworkSystem.prototype.onReceiveBinary = function (bin) {
+        var view = new Uint32Array(bin);
+        this.processReceive(view[0], view);
+    };
+    ClientNetworkSystem.prototype.processReceive = function (opt, data) {
         //发送回调
         //稳定回调，百分之百对应接口
         var tuple = this.events.get(opt);
         if (tuple) {
             var func = tuple[0];
             var caller = tuple[1];
-            func.call(caller, obj);
+            func.call(caller, data);
         }
         //外部回调，外面用on注册
-        this.emit(opt + "", obj);
-    };
-    ClientNetworkSystem.prototype.onReceiveBinary = function (bin) {
-        var bufferView = new Uint8Array(bin);
-        console.log(bufferView);
+        this.emit(opt + "", data);
     };
     /************************************************
      * 指令 和 系统 注册

@@ -93,6 +93,11 @@ var UObject = /** @class */ (function (_super) {
         return _this;
     }
     UObject_1 = UObject;
+    UObject.prototype.getProtocol = function (id, sys) {
+        return null;
+    };
+    UObject.prototype.receiveBinary = function (protocol) {
+    };
     UObject.GeneateID = function () {
         var id = UObject_1.GLOBALID;
         UObject_1.GLOBALID++;
@@ -102,12 +107,8 @@ var UObject = /** @class */ (function (_super) {
     UObject.prototype.receiveData = function (obj) {
     };
     Object.defineProperty(UObject.prototype, "id", {
-        get: function () {
-            return this._id;
-        },
-        set: function (value) {
-            this._id = value;
-        },
+        get: function () { return this._id; },
+        set: function (value) { this._id = value; },
         enumerable: false,
         configurable: true
     });

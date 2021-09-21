@@ -43,9 +43,11 @@ var UDebugSystem = /** @class */ (function (_super) {
     }
     UDebugSystem_1 = UDebugSystem;
     UDebugSystem.prototype.debugAll = function (graphic) {
-        this.drawGrid(graphic);
+        // this.drawGrid(graphic);
         // this.drawScreen(graphic);
-        this.world.actors.forEach(function (actor) { actor.drawDebug(graphic); });
+        if (this.world.isDebug) {
+            this.world.actors.forEach(function (actor) { actor.drawDebug(graphic); });
+        }
     };
     UDebugSystem.prototype.drawGrid = function (graphic) {
         var userMng = this.world.gameInstance.network.userManager;

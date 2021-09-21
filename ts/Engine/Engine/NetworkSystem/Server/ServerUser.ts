@@ -13,6 +13,11 @@ export default class ServerUser extends User {
         let ns = this.mng.ns as ServerNetworkSystem;
         ns.sendCmd(this.conn, cmd, obj);
     }
+    public sendBinary(view, callback = null) {
+        let ns = this.mng.ns as ServerNetworkSystem;
+        ns.sendBinary(this.conn, view, callback);
+    }
+
 }
 
 

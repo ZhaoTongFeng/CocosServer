@@ -1,3 +1,4 @@
+import { Protocol } from "./Engine/NetworkSystem/Share/Protocol";
 import { XBase, xclass, xproperty } from "./Engine/ReflectSystem/XBase";
 type EvtData = { call: Function, thisObj }
 
@@ -52,9 +53,6 @@ export class EvtBase extends XBase {
     }
 }
 
-
-
-
 /**
  * 所有类基类
  * 包含一些通用接口
@@ -62,6 +60,13 @@ export class EvtBase extends XBase {
  */
 @xclass(UObject)
 export default class UObject extends EvtBase {
+    getProtocol(id, sys): Protocol {
+        return null;
+    }
+
+    receiveBinary(protocol: Protocol) {
+
+    }
 
     //任何东西都有一个ID
     static GLOBALID: number = 0;
@@ -77,13 +82,9 @@ export default class UObject extends EvtBase {
     }
 
     @xproperty(String)
-    protected _id: string = UObject.GeneateID() + "";
-    public get id(): string {
-        return this._id;
-    }
-    public set id(value: string) {
-        this._id = value;
-    }
+    private _id: string = UObject.GeneateID() + "";
+    public get id(): string { return this._id; }
+    public set id(value: string) { this._id = value; }
 
     /**
      * ！！！设置为True每帧更新

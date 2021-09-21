@@ -31,6 +31,7 @@ var NetCmd;
     NetCmd[NetCmd["GAME_FINISH"] = 107] = "GAME_FINISH";
     NetCmd[NetCmd["GAME_RESULT"] = 108] = "GAME_RESULT";
     NetCmd[NetCmd["GAME_END"] = 109] = "GAME_END";
+    NetCmd[NetCmd["GAME_SEND_BINARY"] = 110] = "GAME_SEND_BINARY";
     //开发者接口
     NetCmd[NetCmd["DEV_SERVER_STATUS"] = 500] = "DEV_SERVER_STATUS";
 })(NetCmd = exports.NetCmd || (exports.NetCmd = {}));

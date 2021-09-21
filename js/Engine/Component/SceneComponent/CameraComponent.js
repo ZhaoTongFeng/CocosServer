@@ -79,23 +79,29 @@ var UCameraComponent = /** @class */ (function (_super) {
         //更新相机剔除AABB
         var pos = this.getPosition();
         var size = this.owner.world.gameInstance.getWorldView().winSize;
-        // this.catAABB.min.x = pos.x - size.x
-        // this.catAABB.min.y = pos.y - size.y
-        // this.catAABB.max.x = pos.x + size.x
-        // this.catAABB.max.y = pos.x + size.x
-        this.catAABB.min.x = pos.x - size.x / 2;
-        this.catAABB.min.y = pos.y - size.y / 2;
-        this.catAABB.max.x = pos.x + size.x / 2;
-        this.catAABB.max.y = pos.y + size.y / 2;
+        if (this.owner.world.isDebug) {
+            this.catAABB.min.x = pos.x - size.x / 2;
+            this.catAABB.min.y = pos.y - size.y / 2;
+            this.catAABB.max.x = pos.x + size.x / 2;
+            this.catAABB.max.y = pos.y + size.y / 2;
+        }
+        else {
+            this.catAABB.min.x = pos.x - size.x;
+            this.catAABB.min.y = pos.y - size.y;
+            this.catAABB.max.x = pos.x + size.x;
+            this.catAABB.max.y = pos.x + size.x;
+        }
     };
     UCameraComponent.prototype.update = function (dt) {
     };
     UCameraComponent.prototype.drawDebug = function (graphic) {
         var size = this.owner.world.gameInstance.getWorldView().winSize;
-        // let width = size.x*2;
-        // let height = size.y*2;
-        var width = size.x;
-        var height = size.y;
+        var width = size.x * 2;
+        var height = size.y * 2;
+        if (this.owner.world.isDebug) {
+            width = size.x;
+            height = size.y;
+        }
         graphic.drawRect(this.catAABB.min.x, this.catAABB.min.y, width, height, UMath_1.UColor.YELLOW());
     };
     UCameraComponent.prototype.register = function () {

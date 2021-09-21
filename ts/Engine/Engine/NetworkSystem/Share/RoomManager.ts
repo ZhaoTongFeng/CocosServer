@@ -56,6 +56,8 @@ export default class RoomManager extends Manager {
         ns.register(NetCmd.GAME_FINISH, this.onSendGameFinish, this);
         ns.register(NetCmd.GAME_RESULT, this.onSendGameResult, this);
         ns.register(NetCmd.GAME_END, this.onSendGameEnd, this);
+        
+        ns.register(NetCmd.GAME_SEND_BINARY, this.onReceiveBinaryGameData, this);
     }
 
     //获取房间列表
@@ -82,6 +84,8 @@ export default class RoomManager extends Manager {
     protected onGamePlay(...args) { }
 
     protected onReceiveGameData(...args) { }
+
+    protected onReceiveBinaryGameData(...args) { }
 
 
     protected onSendGameFinish(...args) { }

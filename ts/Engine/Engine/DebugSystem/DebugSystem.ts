@@ -12,9 +12,12 @@ export class UDebugSystem extends UObject {
     world: UWorld = null;
 
     debugAll(graphic: UGraphic) {
-        this.drawGrid(graphic);
+        // this.drawGrid(graphic);
         // this.drawScreen(graphic);
-        this.world.actors.forEach(actor => { actor.drawDebug(graphic); });
+        if (this.world.isDebug) {
+            this.world.actors.forEach(actor => { actor.drawDebug(graphic); });
+        }
+
     }
 
     //一个格子宽度
@@ -42,15 +45,15 @@ export class UDebugSystem extends UObject {
                     let x = Math.floor(pos.x / gridWidth) + offsetCol;
                     let y = Math.floor(pos.y / gridWidth) + offsetRow;
                     if (x == j && y == i) {
-                        
+
                         for (let m = -1; m <= 1; m++) {
                             for (let n = -1; n <= 1; n++) {
                                 let tx = x + n;
                                 let ty = y + m;
-                                if(tx >= 0 && tx < gridCol && ty >= 0 && ty < gridRow){
-                                    if (m == 0 &&n == 0) {
+                                if (tx >= 0 && tx < gridCol && ty >= 0 && ty < gridRow) {
+                                    if (m == 0 && n == 0) {
                                         graphic.drawRect((tx - offsetCol) * gridWidth, (ty - offsetRow) * gridWidth, gridWidth, gridWidth, UColor.WHITE(), UColor.RED(), 10);
-                                    }else{
+                                    } else {
                                         graphic.drawRect((tx - offsetCol) * gridWidth, (ty - offsetRow) * gridWidth, gridWidth, gridWidth, UColor.WHITE(), UColor.BLUE(), 10);
                                     }
                                 }

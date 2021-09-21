@@ -28,31 +28,36 @@ var Pawn_1 = __importDefault(require("../../../Engine/Actor/Pawn/Pawn"));
 var XBase_1 = require("../../../Engine/Engine/ReflectSystem/XBase");
 var UMath_1 = require("../../../Engine/Engine/UMath");
 /**
- * 角色基类
- * 包含基本的位移操作
- *
- * 玩家点击一个位置，飞船朝这个方向移动，
+ * 飞船
+ * 包含一个网格插槽，能插上各种ShipItem
  */
 var AShip = /** @class */ (function (_super) {
     __extends(AShip, _super);
     function AShip() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        //战斗属性
+        _this.battleComp = null;
         //装备插槽 尺寸
         _this.itemSize = UMath_1.uu.v2(1, 3);
         //装备插槽 存储
         _this.items = [];
-        //战斗属性
-        _this.battleComp = null;
+        //护盾
         _this.shieldComp = null;
+        //主武器
+        _this.weaponComp = null;
+        //引擎
+        _this.engineComp = null;
         return _this;
     }
     AShip_1 = AShip;
-    AShip.prototype.getShield = function () {
-        return this.shieldComp;
-    };
-    AShip.prototype.setShield = function (shield) {
-        this.shieldComp = shield;
-    };
+    AShip.prototype.setBattleComp = function (comp) { this.battleComp = comp; };
+    AShip.prototype.getBattleComp = function () { return this.battleComp; };
+    AShip.prototype.setShield = function (comp) { this.shieldComp = comp; };
+    AShip.prototype.getShield = function () { return this.shieldComp; };
+    AShip.prototype.setWeapon = function (comp) { this.weaponComp = comp; };
+    AShip.prototype.getWeapon = function () { return this.weaponComp; };
+    AShip.prototype.setEngine = function (comp) { this.engineComp = comp; };
+    AShip.prototype.getEngine = function () { return this.engineComp; };
     AShip.prototype.setItemsSize = function (x, y) {
         this.itemSize.y = y;
         this.itemSize.x = x;
@@ -64,15 +69,9 @@ var AShip = /** @class */ (function (_super) {
         var itemPos = item.getItemPosition();
         this.items[itemPos.y][itemPos.x] = item;
     };
-    AShip.prototype.removeWeapon = function (item) {
+    AShip.prototype.removeItem = function (item) {
         var itemPos = item.getItemPosition();
         this.items[itemPos.y][itemPos.x] = null;
-    };
-    AShip.prototype.setBattleComp = function (battle) {
-        this.battleComp = battle;
-    };
-    AShip.prototype.getBattleComp = function () {
-        return this.battleComp;
     };
     AShip.prototype.unUse = function () {
         _super.prototype.unUse.call(this);

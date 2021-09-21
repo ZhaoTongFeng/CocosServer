@@ -33,12 +33,16 @@ var UMovementComponent = /** @class */ (function (_super) {
     function UMovementComponent() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.mg = 10; //质量
+        //动力
         _this.max_force = 1000;
+        //阻力
+        _this.max_backForce = 1000;
         _this.max_acc = 500;
         _this.max_vel = 200;
         _this.force = UMath_1.uu.v2(0, 0); //力 F = MA
         _this.acc = UMath_1.uu.v2(0, 0); //加速度 A = F/M
         _this.velocity = UMath_1.uu.v2(0, 0); //速度 V = V0 + A*T/2
+        //前进方向
         _this.direction = UMath_1.uu.v2(0, 0);
         return _this;
     }
@@ -66,9 +70,20 @@ var UMovementComponent = /** @class */ (function (_super) {
         if (ac instanceof Pawn_1.default) {
             ac.setMovement(this);
         }
+        this.owner.world.actorSystem.registerMovement(this);
     };
+    UMovementComponent.prototype.clear = function () {
+        this.force.x = 0;
+        this.force.y = 0;
+        this.acc.x = 0;
+        this.acc.y = 0;
+    };
+    //累加，一直加到限制
     UMovementComponent.prototype.addMoveForce = function (value) {
-        this.force.addSelf(value.mul(this.max_force));
+        this.force.addSelf(value);
+        var forceRate = this.force.length();
+        var forceDir = this.force.normalize();
+        this.force = forceDir.mul(UMath_1.UMath.clamp(forceRate, -this.max_force, this.max_force));
     };
     UMovementComponent.prototype.setMoveForce = function (value) {
         this.force = value.mulSelf(this.max_force);
@@ -83,6 +98,7 @@ var UMovementComponent = /** @class */ (function (_super) {
         if (this.owner instanceof Pawn_1.default) {
             this.owner.setMovement(null);
         }
+        this.owner.world.actorSystem.unRegisterMovement(this);
         _super.prototype.onDestory.call(this);
     };
     var UMovementComponent_1;
@@ -92,6 +108,9 @@ var UMovementComponent = /** @class */ (function (_super) {
     __decorate([
         XBase_1.xproperty(Number)
     ], UMovementComponent.prototype, "max_force", void 0);
+    __decorate([
+        XBase_1.xproperty(Number)
+    ], UMovementComponent.prototype, "max_backForce", void 0);
     __decorate([
         XBase_1.xproperty(Number)
     ], UMovementComponent.prototype, "max_acc", void 0);

@@ -51,33 +51,44 @@ export default class ServerNetworkSystem extends NetworkSystem {
             console.log(error);
         }
     }
+
+
+    sendBinary(conn, bufferView, callback = null) {
+        conn["sendBinary"](bufferView, callback);
+    }
     /************************************************
      * 接收
      ************************************************/
+    //解析操作码，分发数据
     onReceive(conn: any, str) {
         let data = JSON.parse(str);
-        let tuple = this.events.get(Number(data["opt"]));
+        this.processReceive(conn, Number(data["opt"]), data);
+    }
+    onReceiveBinary(conn: any, stream) {
+        let byteLength = stream.buffer["byteLength"];
+        let offset = stream["byteOffset"];
+        var view = new Uint32Array(stream.buffer, stream["byteOffset"], 2);
+        let opt = view[0];
+        let leng = view[1];
+        if(leng<byteLength-offset){
+            let subview = new Uint8Array(stream.buffer, stream["byteOffset"], leng);
+            this.processReceive(conn, opt,subview);
+        }
+
+
+    }
+    processReceive(conn, opt, data) {
+        let tuple = this.events.get(opt);
         if (tuple) {
             let func: Function = tuple[0];
             let caller = tuple[1];
             let key = this.getKey(conn);
             func.call(caller, key, conn, data);
         }
-        this.printInfo();
+        // this.printInfo();
     }
 
-    onReceiveBinary(conn: any, stream) {
-        let bufferView = new Uint8Array(stream);
-        console.log(bufferView);
 
-        let array = [1.1, 1.2, 1.3];
-        bufferView = new Uint8Array(array);
-        this.sendBinary(conn, bufferView);
-    }
-
-    sendBinary(conn, buffer, callback = null) {
-        conn["sendBinary"](buffer, callback);
-    }
 
 
 

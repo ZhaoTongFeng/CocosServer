@@ -38,11 +38,13 @@ export default class NetworkSystem extends UObject {
     // 直接发送即可
     public sendCmd(...args) { }
     public sendText(...args) { }
+    public sendBinary(...args) { }
     /************************************************
      * 接收
      ************************************************/
 
     protected onReceive(...args) { }
+    protected onReceiveBinary(...args) { }
 
     /************************************************
      * 指令 和 系统 注册
@@ -56,7 +58,7 @@ export default class NetworkSystem extends UObject {
     roomManager: RoomManager = null;
     //初始化网络相关系统
     public init() {
-        
+
     }
 
     /************************************************

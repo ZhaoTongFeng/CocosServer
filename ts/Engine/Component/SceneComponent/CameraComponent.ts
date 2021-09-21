@@ -51,16 +51,17 @@ export default class UCameraComponent extends USceneComponent {
         //更新相机剔除AABB
         let pos = this.getPosition();
         let size = this.owner.world.gameInstance.getWorldView().winSize;
-
-        // this.catAABB.min.x = pos.x - size.x
-        // this.catAABB.min.y = pos.y - size.y
-        // this.catAABB.max.x = pos.x + size.x
-        // this.catAABB.max.y = pos.x + size.x
-
-        this.catAABB.min.x = pos.x - size.x / 2
-        this.catAABB.min.y = pos.y - size.y / 2
-        this.catAABB.max.x = pos.x + size.x / 2
-        this.catAABB.max.y = pos.y + size.y / 2
+        if (this.owner.world.isDebug) {
+            this.catAABB.min.x = pos.x - size.x / 2
+            this.catAABB.min.y = pos.y - size.y / 2
+            this.catAABB.max.x = pos.x + size.x / 2
+            this.catAABB.max.y = pos.y + size.y / 2
+        } else {
+            this.catAABB.min.x = pos.x - size.x
+            this.catAABB.min.y = pos.y - size.y
+            this.catAABB.max.x = pos.x + size.x
+            this.catAABB.max.y = pos.x + size.x
+        }
     }
     public update(dt) {
 
@@ -68,14 +69,17 @@ export default class UCameraComponent extends USceneComponent {
 
     public drawDebug(graphic: UGraphic) {
         let size = this.owner.world.gameInstance.getWorldView().winSize;
-        // let width = size.x*2;
-        // let height = size.y*2;
-        let width = size.x;
-        let height = size.y;
+        let width = size.x * 2;
+        let height = size.y * 2;
+        if (this.owner.world.isDebug) {
+            width = size.x;
+            height = size.y;
+        }
+
 
 
         graphic.drawRect(this.catAABB.min.x, this.catAABB.min.y, width, height, UColor.YELLOW());
-        
+
 
     }
 

@@ -267,6 +267,10 @@ var ClientRoomManager = /** @class */ (function (_super) {
         var room = this.getLocRoom();
         room.onReceiveGameData(obj);
     };
+    ClientRoomManager.prototype.onReceiveBinaryGameData = function (data) {
+        var room = this.getLocRoom();
+        room.onReceiveBinaryGameData(data);
+    };
     /**
      * 结算阶段
      */
